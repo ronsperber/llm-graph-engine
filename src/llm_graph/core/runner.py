@@ -1,0 +1,100 @@
+
+import matplotlib.pyplot as plt
+from typing import List, Dict, Set, Any
+from .nodes import GraphNode
+
+
+class GraphRunner:
+    """
+    Class to hold a graph and execute from from the start node"""
+    def __init__(
+            self,
+            nodes: List[GraphNode] | Set[GraphNode] | tuple[GraphNode,...] | Dict[str, GraphNode],
+            start_node: str
+            ):
+        
+        def make_nodes_dict(nodes) -> dict[str, GraphNode]:
+            if isinstance(nodes, dict):
+                return nodes
+            elif type(nodes) in (set, list, tuple):
+                nodes_dict = {node.name : node for node in nodes}
+                return nodes_dict
+            raise TypeError(f"Nodes needs to be a list, set, tuple, or dict, got {type(nodes)}")
+        self.nodes_dict = make_nodes_dict(nodes)
+        self.start_node = start_node
+        self.trace_log = []
+        self.state_dict = {}
+    
+    def clear_message_history(self):
+        self.state_dict["message_history"] = []
+    
+    def execute(self, input: dict, reset_trace: bool = False):
+        if reset_trace:
+            self.trace_log = []
+        self.state_dict.update(input)
+        current_node_name = self.start_node
+        current_state = {}
+        while current_node_name:
+            node = self.nodes_dict[current_node_name]
+            current_state = node.execute(self.state_dict)
+            self.trace_log.append(
+                {
+                    "step_num" : len(self.trace_log) + 1,
+                    "name" : node.name,
+                    "node_input": node.last_input,
+                    "node_output": node.last_output,
+                    "next_node_name": node.next_node_name
+                }
+            )
+            self.state_dict.update(current_state)
+            current_node_name = node.next_node_name
+        return current_state
+    
+    def print_trace(self):
+        for step in self.trace_log:
+            print(f"Step {step['step_num']}")
+            print(f"Node {step['name']}: {step['node_input']} -> {step['node_output']}")
+            print(f"Next node: {step['next_node_name']}")
+
+    def matplotlib_trace(self, branch_color_map: dict = None):
+        """
+        Draw a simple linear trace of the executed graph using matplotlib.
+        Works with both linear and conditional nodes.
+        """
+        if branch_color_map is None:
+            branch_color_map = {}
+        steps = self.trace_log
+        n = len(steps)
+    
+        fig, ax = plt.subplots(figsize=(8, n * 1.2))
+        ax.set_xlim(0, 2)
+        ax.set_ylim(0, n)
+        ax.axis('off')
+    
+        for i, step in enumerate(steps):
+            y = n - i - 0.5  # vertical position
+            x = 1
+        
+            # Draw node as a rectangle
+            rect = plt.Rectangle((0.5, y - 0.25), 1, 0.5, facecolor='lightblue', edgecolor='black')
+            ax.add_patch(rect)
+        
+            # Node label: name and output summary
+            output_str = str(step['node_output'])
+            if len(output_str) > 30:
+                output_str = output_str[:27] + "..."
+            label = f"{step['name']}\n{output_str}"
+            ax.text(x, y, label, ha='center', va='center', fontsize=10)
+        
+            # Draw arrow to next node if exists
+            if i < n - 1:
+                next_node = steps[i]['next_node_name']
+                arrow_color = branch_color_map.get(next_node, 'gray')
+                next_y = n - i - 1 - 0.5
+                ax.annotate(
+                    '', xy=(1, next_y + 0.25), xytext=(1, y - 0.25),
+                    arrowprops=dict(arrowstyle="->", color= arrow_color, lw=1.5)
+                )
+    
+        plt.tight_layout()
+        plt.show()
