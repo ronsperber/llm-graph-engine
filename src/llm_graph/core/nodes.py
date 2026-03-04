@@ -11,7 +11,7 @@ class GraphNode:
         self.last_output = None
         self.next_node_name = next_node_name
 
-    def execute(self, state):
+    def execute(self, state:dict) -> dict:
         self.last_input = copy.deepcopy(state)
         output = self._execute_impl(state)
         self.last_output = copy.deepcopy(output)

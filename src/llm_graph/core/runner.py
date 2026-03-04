@@ -1,4 +1,4 @@
-
+import copy
 import matplotlib.pyplot as plt
 from typing import List, Dict, Set
 from .nodes import GraphNode
@@ -31,6 +31,8 @@ class GraphRunner:
         self.state_dict["message_history"] = []
     
     def execute(self, input: dict, reset_trace: bool = False):
+        self.out_tokens = 0
+        self.in_tokens = 0
         self.node_tracker = {}
         if not isinstance(input, dict):
             raise TypeError("Input must be a dict")
@@ -60,9 +62,23 @@ class GraphRunner:
                 }
             )
             self.state_dict.update(current_state)
+            usage = current_state.get('usage')
+            if usage:
+                self.in_tokens += usage.get('input_tokens', 0)
+                self.out_tokens +=usage.get('output_tokens', 0)
             current_node_name = node.next_node_name
-        return current_state
+        return {
+            "state_dict": self.state_dict,
+            "trace_log": copy.deepcopy(self.trace_log),
+            "token_usage": self.get_token_usage()
+            }
     
+    def get_token_usage(self):
+        return {
+            "in_tokens": self.in_tokens,
+            "out_tokens": self.out_tokens,
+            "total_tokens": self.in_tokens + self.out_tokens
+        }
     def print_trace(self):
         for step in self.trace_log:
             print(f"Step {step['step_num']}")
