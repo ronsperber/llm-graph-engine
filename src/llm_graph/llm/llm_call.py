@@ -15,21 +15,23 @@ class LLMCall:
             self,
             response_fn: Callable,
             prompt_template: str | None = None,
-            max_history_pairs = 10
+            max_history_pairs = 10,
+            query_key: str = "user_query"
     ):
         self.prompt_template = prompt_template
         self.response_fn = response_fn
         self.max_history_pairs = max_history_pairs
+        self.query_key = query_key
 
     def __call__(self, state: dict):
         history = state.get("message_history", [])
-        user_query = state.get("user_query")
         if self.prompt_template:
             prompt = self.prompt_template.format(**state)
-        elif "user_query" in state:
-            prompt = state["user_query"]
+        elif self.query_key in state:
+            prompt = state[self.query_key]
         else:
-            raise KeyError("user_query key missing and no prompt template given")
+            raise KeyError(f"{self.query_key} key missing and no prompt template given")
+        user_query = state.get(self.query_key, prompt)
         response = self.response_fn(
             input=prompt,
             history = history

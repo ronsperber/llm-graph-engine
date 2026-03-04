@@ -29,6 +29,8 @@ class GraphRunner:
         self.state_dict["message_history"] = []
     
     def execute(self, input: dict, reset_trace: bool = False):
+        if not isinstance(input, dict):
+            raise TypeError("Input must be a dict")
         if reset_trace:
             self.trace_log = []
         self.state_dict.update(input)
