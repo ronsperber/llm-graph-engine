@@ -1,6 +1,6 @@
 
 import matplotlib.pyplot as plt
-from typing import List, Dict, Set, Any
+from typing import List, Dict, Set
 from .nodes import GraphNode
 
 
@@ -10,7 +10,8 @@ class GraphRunner:
     def __init__(
             self,
             nodes: List[GraphNode] | Set[GraphNode] | tuple[GraphNode,...] | Dict[str, GraphNode],
-            start_node: str
+            start_node: str,
+            max_node_visits: int | None = None
             ):
         
         def make_nodes_dict(nodes) -> dict[str, GraphNode]:
@@ -24,11 +25,13 @@ class GraphRunner:
         self.start_node = start_node
         self.trace_log = []
         self.state_dict = {}
+        self.max_node_visits = max_node_visits
     
     def clear_message_history(self):
         self.state_dict["message_history"] = []
     
     def execute(self, input: dict, reset_trace: bool = False):
+        self.node_tracker = {}
         if not isinstance(input, dict):
             raise TypeError("Input must be a dict")
         if reset_trace:
@@ -37,6 +40,14 @@ class GraphRunner:
         current_node_name = self.start_node
         current_state = {}
         while current_node_name:
+            self.node_tracker[current_node_name] = self.node_tracker.get(current_node_name, 0) + 1
+            if self.max_node_visits is not None:
+                if self.node_tracker[current_node_name] > self.max_node_visits:
+                    raise RuntimeError(
+                        f"Node {current_node_name} exceeded max visit limit "
+                        f"(visited {self.node_tracker[current_node_name]}, "
+                        f"max allowed {self.max_node_visits})"
+)
             node = self.nodes_dict[current_node_name]
             current_state = node.execute(self.state_dict)
             self.trace_log.append(
