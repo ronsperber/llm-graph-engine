@@ -6,7 +6,7 @@ def json_parse(s: str):
     try:
         parsed = json.loads(s)
     except Exception:
-        parsed = {}
+        parsed = {"raw_output": s, "parse_error": True}
     return parsed
 
     
@@ -26,7 +26,10 @@ class LLMCall:
     def __call__(self, state: dict):
         history = state.get("message_history", [])
         if self.prompt_template:
-            prompt = self.prompt_template.format(**state)
+            try:
+                prompt = self.prompt_template.format(**state)
+            except KeyError as e:
+                raise KeyError(f"Prompt template missing required state field: {e}")
         elif self.query_key in state:
             prompt = state[self.query_key]
         else:
@@ -34,7 +37,7 @@ class LLMCall:
         user_query = state.get(self.query_key, prompt)
         response = self.response_fn(
             input=prompt,
-            history = history
+            history=history
         )
         raw = response["raw_output"]
         new_history = history + [
