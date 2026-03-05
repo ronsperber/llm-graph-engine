@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 import copy
 
 class GraphNode:
@@ -11,13 +11,13 @@ class GraphNode:
         self.last_output = None
         self.next_node_name = next_node_name
 
-    def execute(self, state:dict) -> dict:
+    def execute(self, state:dict[str, Any]) -> dict[str, Any]:
         self.last_input = copy.deepcopy(state)
         output = self._execute_impl(state)
         self.last_output = copy.deepcopy(output)
         return output
 
-    def _execute_impl(self, state):
+    def _execute_impl(self, state:dict[str, Any]) -> dict[str, Any]:
         raise NotImplementedError
     
 class FunctionalNode(GraphNode):
@@ -33,11 +33,8 @@ class FunctionalNode(GraphNode):
             ):
         super().__init__(name, next_node_name)
         self.func = func
-        self.last_input = None
-        self.last_output = None
     
-
-    def _execute_impl(self, state: dict):
+    def _execute_impl(self, state: dict[str, Any]) -> dict[str, Any]:
         return self.func(state)
         
 class ConditionalNode(GraphNode):
@@ -52,6 +49,6 @@ class ConditionalNode(GraphNode):
         super().__init__(name)
         self.condition_fn = condition_fn
         self.next_node_name = None
-    def _execute_impl(self, state: dict):
+    def _execute_impl(self, state: dict[str, Any]) -> dict[str, Any]:
         self.next_node_name = self.condition_fn(state)
         return {}

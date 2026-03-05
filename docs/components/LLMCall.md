@@ -1,8 +1,8 @@
-Component: LLMCall
+## Component: LLMCall
 
 Purpose: To create a callable that takes in the state, passes a prompt to an LLM and returns back a dict based on the output of the LLM. It is intended to fit into a FunctionalNode as `func`.
 
-Attributes
+### Attributes
 - response_fn
 - prompt_template (optional)
 - max_history_pairs
@@ -10,7 +10,7 @@ Attributes
 
 No exposed methods, just a call method
 
-Usage
+### Usage
 ```python
 from openai import OpenAI
 from llm_graph.llm.llm_call import LLMCall

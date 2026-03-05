@@ -1,4 +1,4 @@
-Component: GraphRunner
+### Component: GraphRunner
 
 Purpose:
 GraphRunner manages execution of workflow graphs by controlling node traversal
@@ -14,7 +14,7 @@ State Model:
 - Nodes return partial state updates.
 - GraphRunner merges updates into state_dict.
 
-Attributes:
+### Attributes:
 - state_dict
 - trace_log
 - nodes_dict
@@ -23,14 +23,14 @@ Attributes:
 - in_tokens
 - node_tracker
 
-Methods:
+### Methods:
 - execute(state)
 - clear_message_history()
 - get_token_usage()
 - print_trace()
 - matplotlib_trace(Optional: branch_color_map)
 
-Usage:
+### Usage:
 ```python
 from llm_graph.core.runner import GraphRunner
 runner = GraphRunner(

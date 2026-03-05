@@ -41,7 +41,7 @@ class GraphRunner:
             self.trace_log = []
         self.state_dict.update(input)
         current_node_name = self.start_node
-        current_state = {}
+        delta = {}
         while current_node_name:
             self.node_tracker[current_node_name] = self.node_tracker.get(current_node_name, 0) + 1
             if self.max_node_visits is not None:
@@ -52,7 +52,7 @@ class GraphRunner:
                         f"max allowed {self.max_node_visits})"
 )
             node = self.nodes_dict[current_node_name]
-            current_state = node.execute(self.state_dict)
+            delta = node.execute(self.state_dict)
             self.trace_log.append(
                 {
                     "step_num" : len(self.trace_log) + 1,
@@ -62,8 +62,8 @@ class GraphRunner:
                     "next_node_name": node.next_node_name
                 }
             )
-            self.state_dict.update(current_state)
-            usage = current_state.get('usage')
+            self.state_dict.update(delta)
+            usage = delta.get('usage')
             if usage:
                 self.in_tokens += usage.get('input_tokens', 0)
                 self.out_tokens +=usage.get('output_tokens', 0)

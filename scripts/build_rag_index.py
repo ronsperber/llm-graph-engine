@@ -1,55 +1,85 @@
 from pathlib import Path
+import re
 import chromadb
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 DOC_PATH = Path("docs")
 DB_PATH = "vector_db"
 
-print("Working directory:", Path.cwd())
-print("Docs path exists:", DOC_PATH.exists())
-
-# small, fast embedding model
+# Embedding model (small + fast demo model)
 embedding_fn = SentenceTransformerEmbeddingFunction(
     model_name="all-MiniLM-L6-v2"
 )
 
+# Recreate persistent client
 client = chromadb.PersistentClient(path=DB_PATH)
 
-collection = client.get_or_create_collection(
+# Delete and recreate collection for clean rebuild
+try:
+    client.delete_collection("llm_graph_docs")
+except:
+    pass
+
+collection = client.create_collection(
     name="llm_graph_docs",
     embedding_function=embedding_fn
 )
 
 
-def chunk_text(text, chunk_size=400, overlap=50):
-    chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start += chunk_size - overlap
-
-    return chunks
+def split_markdown_sections(text: str):
+    """
+    Split corpus by markdown headers (## or ### etc).
+    """
+    sections = re.split(r'\n(?=#{2,})', text)
+    return [s.strip() for s in sections if s.strip()]
 
 
-doc_id = 0
+def normalize_chunk(section_text: str, component_name: str | None):
+    """
+    Add semantic anchor line if component is known.
+    """
 
-for file in DOC_PATH.rglob("*.md"):
-    print("Found:", file)
-    text = file.read_text()
+    if component_name:
+        prefix = f"Component documentation: {component_name}\n\n"
+        return prefix + section_text
 
-    chunks = chunk_text(text)
+    return section_text
 
-    for chunk in chunks:
-        collection.add(
-            documents=[chunk],
-            ids=[f"doc_{doc_id}"],
-            metadatas=[{
+
+def build_index():
+    doc_id = 0
+
+    for file in DOC_PATH.rglob("*.md"):
+
+        text = file.read_text(encoding="utf-8")
+
+        sections = split_markdown_sections(text)
+        print(f"{file} has {len(sections)} sections")
+        current_component = None
+
+        for section in sections:
+
+            match = re.search(r"Component:\s*(.+)", section)
+            if match:
+                current_component = match.group(1).strip()
+
+            normalized_chunk = normalize_chunk(section, current_component)
+
+            metadata = {
                 "source": str(file),
-                "type": file.parent.name
-            }]
-        )
-        doc_id += 1
+                "component": current_component or "unknown",
+                "section": "documentation"
+            }
 
-print(f"Ingested {doc_id} chunks.")
+            chunk_id = f"{file.stem}_{doc_id}"
+            print(f"Processing chunk_id : {chunk_id}")
+            collection.add(
+                documents=[normalized_chunk],
+                ids=[chunk_id],
+                metadatas=[metadata]
+            )
+
+            doc_id += 1
+        
+if __name__ == "__main__":
+    build_index()

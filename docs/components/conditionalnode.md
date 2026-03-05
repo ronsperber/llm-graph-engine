@@ -1,15 +1,15 @@
-Component: ConditionalNode
+## Component: ConditionalNode
 
 Purpose: Node used in the workflow to decide which node to go to next based on a conditional function
 
-Attributes
+### Attributes
 - condition_fn
 - name
 
-Method
+### Method
 - execute(state)
 
-example:
+### Usage:
 
 ```python
 from llm_graph.core.nodes import ConditionalNode
