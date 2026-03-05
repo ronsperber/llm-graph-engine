@@ -1,6 +1,7 @@
 import copy
-import matplotlib.pyplot as plt
 from typing import List, Dict, Set
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 from .nodes import GraphNode
 
 
@@ -85,7 +86,7 @@ class GraphRunner:
             print(f"Node {step['name']}: {step['node_input']} -> {step['node_output']}")
             print(f"Next node: {step['next_node_name']}")
 
-    def matplotlib_trace(self, branch_color_map: dict = None):
+    def matplotlib_trace(self, branch_color_map: dict|None = None):
         """
         Draw a simple linear trace of the executed graph using matplotlib.
         Works with both linear and conditional nodes.
@@ -105,7 +106,7 @@ class GraphRunner:
             x = 1
         
             # Draw node as a rectangle
-            rect = plt.Rectangle((0.5, y - 0.25), 1, 0.5, facecolor='lightblue', edgecolor='black')
+            rect = Rectangle((0.5, y - 0.25), 1, 0.5, facecolor='lightblue', edgecolor='black')
             ax.add_patch(rect)
         
             # Node label: name and output summary

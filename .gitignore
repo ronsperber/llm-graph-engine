@@ -185,5 +185,5 @@ cython_debug/
 
 # local notebooks
 local_notebooks/
-# for now the docs
-llm_graph_docs/
+# the database
+vector_db/
