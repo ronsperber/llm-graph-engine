@@ -63,10 +63,9 @@ class GraphRunner:
                 }
             )
             self.state_dict.update(delta)
-            usage = delta.get('usage')
-            if usage:
-                self.in_tokens += usage.get('input_tokens', 0)
-                self.out_tokens +=usage.get('output_tokens', 0)
+            usage = delta.get('usage') or {}
+            self.in_tokens += usage.get('prompt_tokens', 0)
+            self.out_tokens +=usage.get('completion_tokens', 0)
             current_node_name = node.next_node_name
         return {
             "state_dict": self.state_dict,

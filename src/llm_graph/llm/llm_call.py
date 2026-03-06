@@ -1,5 +1,6 @@
 
-from typing import Callable
+from typing import Callable, Any
+from openai.types.chat import ChatCompletionMessageParam
 import json
 
 def json_parse(s: str):
@@ -13,7 +14,7 @@ def json_parse(s: str):
 class LLMCall:
     def __init__(
             self,
-            response_fn: Callable,
+            response_fn: Callable[[list[ChatCompletionMessageParam]], dict[str, Any]],
             prompt_template: str | None = None,
             max_history_pairs = 10,
             query_key: str = "user_query"
@@ -24,7 +25,7 @@ class LLMCall:
         self.query_key = query_key
 
     def __call__(self, state: dict):
-        history = state.get("message_history", [])
+        history = list(state.get("message_history", []))
         if self.prompt_template:
             try:
                 prompt = self.prompt_template.format(**state)
@@ -34,16 +35,12 @@ class LLMCall:
             prompt = state[self.query_key]
         else:
             raise KeyError(f"{self.query_key} key missing and no prompt template given")
-        user_query = state.get(self.query_key, prompt)
+        messagelist = history + [{"role": "user", "content" : prompt}]
         response = self.response_fn(
-            input=prompt,
-            history=history
+            messagelist
         )
-        raw = response["raw_output"]
-        new_history = history + [
-            {"role": "user", "content": user_query},
-            {"role": "assistant" , "content": raw}
-        ]
+        raw = response.get("raw_output", "")
+        new_history = messagelist + [{"role": "assistant", "content": raw}]
         new_history = new_history[-2 * self.max_history_pairs:]
         parsed = json_parse(raw)
         return response | parsed | {"message_history": new_history}
