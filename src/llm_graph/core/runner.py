@@ -15,7 +15,9 @@ class GraphRunner:
             max_node_visits: int | None = None
             ):
         
-        def make_nodes_dict(nodes) -> dict[str, GraphNode]:
+        def make_nodes_dict(
+                nodes:  List[GraphNode] | Set[GraphNode] | tuple[GraphNode,...] | Dict[str, GraphNode]
+        ) -> dict[str, GraphNode]:
             if isinstance(nodes, dict):
                 return nodes
             elif type(nodes) in (set, list, tuple):
