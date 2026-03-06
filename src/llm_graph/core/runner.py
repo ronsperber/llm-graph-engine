@@ -79,11 +79,20 @@ class GraphRunner:
             "out_tokens": self.out_tokens,
             "total_tokens": self.in_tokens + self.out_tokens
         }
+    
     def print_trace(self):
         for step in self.trace_log:
-            print(f"Step {step['step_num']}")
-            print(f"Node {step['name']}: {step['node_input']} -> {step['node_output']}")
-            print(f"Next node: {step['next_node_name']}")
+            step_num = step.get("step_num")
+            name = step.get("name")
+            node_input = step.get("node_input")
+            node_output = step.get("node_output")
+            next_node = step.get("next_node_name")
+            print(f"Step {step_num}")
+            print(f"  Node: {name}")
+            print(f"  Input: {node_input}")
+            print(f"  Output: {node_output}")
+            print(f"  Next: {next_node if next_node is not None else 'TERMINAL'}")
+            print()
 
     def matplotlib_trace(self, branch_color_map: dict|None = None):
         """
