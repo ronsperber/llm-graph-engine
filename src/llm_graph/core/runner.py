@@ -31,7 +31,7 @@ class GraphRunner:
     def clear_message_history(self):
         self.state_dict["message_history"] = []
     
-    def execute(self, input: dict, reset_trace: bool = False):
+    def execute(self, input: dict, reset_trace: bool = True):
         self.out_tokens = 0
         self.in_tokens = 0
         self.node_tracker = {}
