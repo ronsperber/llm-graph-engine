@@ -1,5 +1,5 @@
 import copy
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Literal
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from .nodes import GraphNode
@@ -12,7 +12,8 @@ class GraphRunner:
             self,
             nodes: List[GraphNode] | Set[GraphNode] | tuple[GraphNode,...] | Dict[str, GraphNode],
             start_node: str,
-            max_node_visits: int | None = None
+            max_node_visits: int | None = None,
+            on_max_visits : Literal["error", "exit"] = "exit"
             ):
         
         def make_nodes_dict(
@@ -29,6 +30,7 @@ class GraphRunner:
         self.trace_log = []
         self.state_dict = {}
         self.max_node_visits = max_node_visits
+        self.on_max_visits = on_max_visits
     
     def execute(self, input: dict, reset_trace: bool = True):
         self.out_tokens = 0
@@ -41,15 +43,20 @@ class GraphRunner:
         self.state_dict = copy.deepcopy(input)
         current_node_name = self.start_node
         delta = {}
+        terminated_early = False
         while current_node_name:
             self.node_tracker[current_node_name] = self.node_tracker.get(current_node_name, 0) + 1
             if self.max_node_visits is not None:
                 if self.node_tracker[current_node_name] > self.max_node_visits:
-                    raise RuntimeError(
-                        f"Node {current_node_name} exceeded max visit limit "
-                        f"(visited {self.node_tracker[current_node_name]}, "
-                        f"max allowed {self.max_node_visits})"
-)
+                    if self.on_max_visits == "error":
+                        raise RuntimeError(
+                            f"Node {current_node_name} exceeded max visit limit "
+                            f"(visited {self.node_tracker[current_node_name]}, "
+                            f"max allowed {self.max_node_visits})"
+                        )
+                    else:
+                        terminated_early = True
+                        break
             node = self.nodes_dict[current_node_name]
             delta = node.execute(self.state_dict)
             self.trace_log.append(
@@ -69,7 +76,8 @@ class GraphRunner:
         return {
             "state_dict": self.state_dict,
             "trace_log": copy.deepcopy(self.trace_log),
-            "token_usage": self.get_token_usage()
+            "token_usage": self.get_token_usage(),
+            "terminated_early": terminated_early
             }
     
     def get_token_usage(self):

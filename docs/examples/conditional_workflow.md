@@ -24,6 +24,7 @@ conditional_node
 from openai import OpenAI
 from llm_graph.core.nodes import FunctionalNode, ConditionalNode
 from llm_graph.core.graphrunner import GraphRunner
+from llm_graph.core.sessionrunner import SessionRunner
 from llm_graph.llm.llm_call import LLMCall
 from llm_graph.llm.response_functions import OpenAI_response_fn
 
@@ -88,11 +89,14 @@ general_node = FunctionalNode(
     name="general"
 )
 
-runner = GraphRunner(
+graphrunner = GraphRunner(
     nodes = [start_node, conditional_node, coding_node, general_node],
     start_node = "start"
 )
-
+runner = SessionRunner(
+    graphrunner=graphrunner,
+    session_keys=["message_history"]
+)
 response = runner.execute(
     {"user_query": "How do I implement quicksort in Scala?"}
 )

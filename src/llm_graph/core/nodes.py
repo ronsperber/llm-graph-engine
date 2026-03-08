@@ -36,10 +36,11 @@ class FunctionalNode(GraphNode):
     
     def _execute_impl(self, state: dict[str, Any]) -> dict[str, Any]:
             output = self.func(state)
+            func_name = getattr(self.func, "__name__", self.func.__class__.__name__)
             if not isinstance(output, dict):
                 raise TypeError(
                     f"Node '{self.name}' using function "
-                    f"{self.func.__name__} returned {type(output)}, expected dict."
+                    f"{func_name} returned {type(output)}, expected dict."
                     )
             return output
         
