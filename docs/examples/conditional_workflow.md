@@ -66,7 +66,7 @@ general_llm = LLMCall(
 )
 
 def conditional_fn(state):
-    return state['query_type']
+    return state['query_type'] # query type here is coding or general
 
 start_node = FunctionalNode(
     func=branching_llm,
