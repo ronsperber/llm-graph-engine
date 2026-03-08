@@ -30,9 +30,6 @@ class GraphRunner:
         self.state_dict = {}
         self.max_node_visits = max_node_visits
     
-    def clear_message_history(self):
-        self.state_dict["message_history"] = []
-    
     def execute(self, input: dict, reset_trace: bool = True):
         self.out_tokens = 0
         self.in_tokens = 0
@@ -41,7 +38,7 @@ class GraphRunner:
             raise TypeError("Input must be a dict")
         if reset_trace:
             self.trace_log = []
-        self.state_dict.update(input)
+        self.state_dict = copy.deepcopy(input)
         current_node_name = self.start_node
         delta = {}
         while current_node_name:

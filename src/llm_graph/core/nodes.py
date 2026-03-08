@@ -35,7 +35,13 @@ class FunctionalNode(GraphNode):
         self.func = func
     
     def _execute_impl(self, state: dict[str, Any]) -> dict[str, Any]:
-        return self.func(state)
+            output = self.func(state)
+            if not isinstance(output, dict):
+                raise TypeError(
+                    f"Node '{self.name}' using function "
+                    f"{self.func.__name__} returned {type(output)}, expected dict."
+                    )
+            return output
         
 class ConditionalNode(GraphNode):
     """

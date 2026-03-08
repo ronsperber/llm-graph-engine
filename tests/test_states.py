@@ -1,6 +1,6 @@
 import pytest
 from llm_graph.core.nodes import ConditionalNode, FunctionalNode
-from llm_graph.core.runner import GraphRunner
+from llm_graph.core.graphrunner import GraphRunner
 
 def test_propogation():
     f1 = lambda x : {"a":"node_1"}

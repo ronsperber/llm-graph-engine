@@ -2,7 +2,7 @@
 
 Purpose:
 GraphRunner manages execution of workflow graphs by controlling node traversal
-and maintaining runtime state. It also tracks token usage and enforces optional node visit limits. 
+and maintaining runtime state. It also tracks token usage and enforces optional node visit limits. It does not maintain state_dict across multiple calls.
 
 Key Responsibilities:
 - Executes nodes sequentially
@@ -32,7 +32,7 @@ State Model:
 
 ### Usage:
 ```python
-from llm_graph.core.runner import GraphRunner
+from llm_graph.core.graphrunner import GraphRunner
 runner = GraphRunner(
     nodes = nodelist,
     start_node = 'start',
@@ -45,4 +45,3 @@ final_state = output['state_dict']
 
 Notes:
 - GraphRunner does not depend on UI frameworks.
-

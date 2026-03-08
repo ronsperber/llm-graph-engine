@@ -23,7 +23,7 @@ conditional_node
 ```python
 from openai import OpenAI
 from llm_graph.core.nodes import FunctionalNode, ConditionalNode
-from llm_graph.core.runner import GraphRunner
+from llm_graph.core.graphrunner import GraphRunner
 from llm_graph.llm.llm_call import LLMCall
 from llm_graph.llm.response_functions import OpenAI_response_fn
 
