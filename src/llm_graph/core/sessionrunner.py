@@ -5,10 +5,10 @@ from .graphrunner import GraphRunner
 class SessionRunner:
     def __init__(
             self,
-            graphrunner: GraphRunner,
+            graph: GraphRunner,
             session_keys: list | None = None
     ):
-        self.graphrunner = graphrunner
+        self.graph = graph
         if session_keys is None:
             session_keys = []
         self.session_keys = session_keys
@@ -20,7 +20,7 @@ class SessionRunner:
             input : dict[str, Any]
     ):
         graph_input = self.session_dict | input
-        response = self.graphrunner.execute(graph_input)
+        response = self.graph.execute(graph_input)
         state_dict = response.get("state_dict") or {}
         trace_log = deepcopy(response.get("trace_log") or [])
         self.trace_logs.append(trace_log)

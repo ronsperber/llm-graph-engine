@@ -9,7 +9,7 @@ Key Responsibilities:
 - keep a list of the `trace_log` output from each call
 
 ### Attributes
-- graphrunner : the GraphRunner instance being used
+- graph : the GraphRunner instance being used
 - session_keys : a list of the keys that are meant to be held between execution calls
 - session_dict : the dictionary of key-value pairs with keys from session_keys only
 - trace_logs : a list of the trace_logs from all the calls to the graphrunner
@@ -22,7 +22,7 @@ Key Responsibilities:
 # we assume here that graphrunner is already defined
 session_keys = ['message_history']
 sessionrunner = SessionRunner(
-    graphrunner=graphrunner,
+    graph=graph,
     session_keys=session_keys,
 )
 sessionrunner.execute({"user query": "What is the capital of France?"})
