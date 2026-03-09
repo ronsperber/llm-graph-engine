@@ -1,3 +1,7 @@
+"""
+module to hold GraphRunner class
+which maintains state_dict and executes nodes
+"""
 import copy
 from typing import List, Dict, Set, Literal
 import matplotlib.pyplot as plt
@@ -15,10 +19,26 @@ class GraphRunner:
             max_node_visits: int | None = None,
             on_max_visits : Literal["error", "exit"] = "exit"
             ):
+        """
+        Parameters
+        ----------
+        nodes : List[GraphNode] | Set[GraphNode] | tuple[GraphNode] | Dict[str, Graphnode]
+            nodes that are in the graph
+        start_node : str
+            name of node to start execution
+        max_node_visits : int or None
+            when not None, the maximum time a node can be visited in a call to execute
+        on_max_visits: str
+            how to deal when max visits gets exceeded at a node
+        """
         
         def make_nodes_dict(
                 nodes:  List[GraphNode] | Set[GraphNode] | tuple[GraphNode,...] | Dict[str, GraphNode]
         ) -> dict[str, GraphNode]:
+            """
+            takes the nodes parameter and turns it into a dict if it's not already
+            note: a dict passed should have the key for a node the same as node.name
+            """
             if isinstance(nodes, dict):
                 return nodes
             elif type(nodes) in (set, list, tuple):
@@ -33,6 +53,22 @@ class GraphRunner:
         self.on_max_visits = on_max_visits
     
     def execute(self, input: dict, reset_trace: bool = True):
+        """
+        main execution path for a graph
+        Parameters
+        ----------
+        input : dict
+            the initial state being passed to the graph
+        reset_trace : bool
+            whether or not to reset the trace_log on execute
+        
+        Returns
+        ------- 
+        dict
+            keys: state_dict: the state_dict after execution, trace_log: the trace log,
+            token_usage: the number of tokens used, terminated_early: if the graph had to
+            terminate early
+        """
         self.out_tokens = 0
         self.in_tokens = 0
         self.node_tracker = {}
@@ -40,25 +76,35 @@ class GraphRunner:
             raise TypeError("Input must be a dict")
         if reset_trace:
             self.trace_log = []
+        # start by copying the input into the state_dict
         self.state_dict = copy.deepcopy(input)
         current_node_name = self.start_node
         delta = {}
         terminated_early = False
+        # looping through the nodes
         while current_node_name:
+            # track the visit to the current node
             self.node_tracker[current_node_name] = self.node_tracker.get(current_node_name, 0) + 1
+            # if there is a max node visit limit, check if limit was exceeded
             if self.max_node_visits is not None:
                 if self.node_tracker[current_node_name] > self.max_node_visits:
+                    # when exceeded, behavior depends on on_max_visits
                     if self.on_max_visits == "error":
+                        # Here we throw an exception
                         raise RuntimeError(
                             f"Node {current_node_name} exceeded max visit limit "
                             f"(visited {self.node_tracker[current_node_name]}, "
                             f"max allowed {self.max_node_visits})"
                         )
                     else:
+                        # in this case we simply set a flag that we terminated early and 
+                        # break
                         terminated_early = True
                         break
+            # pass the state to the node, execute, and get the delta back
             node = self.nodes_dict[current_node_name]
             delta = node.execute(self.state_dict)
+            # update the trace_log
             self.trace_log.append(
                 {
                     "step_num" : len(self.trace_log) + 1,
@@ -69,6 +115,7 @@ class GraphRunner:
                 }
             )
             self.state_dict.update(delta)
+            # if tokens were used, track those
             usage = delta.get('usage') or {}
             self.in_tokens += usage.get('prompt_tokens', 0)
             self.out_tokens +=usage.get('completion_tokens', 0)
@@ -81,6 +128,10 @@ class GraphRunner:
             }
     
     def get_token_usage(self):
+        """
+        return current token usage by the graph
+        note: this does not reset at each execute call
+        """
         return {
             "in_tokens": self.in_tokens,
             "out_tokens": self.out_tokens,
@@ -88,6 +139,9 @@ class GraphRunner:
         }
     
     def print_trace(self):
+        """
+        print through the trace
+        """
         for step in self.trace_log:
             step_num = step.get("step_num")
             name = step.get("name")
