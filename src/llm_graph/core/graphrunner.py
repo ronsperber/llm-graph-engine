@@ -40,11 +40,21 @@ class GraphRunner:
             note: a dict passed should have the key for a node the same as node.name
             """
             if isinstance(nodes, dict):
+                for k, v in nodes.items():
+                    if k != v.name:
+                        raise ValueError(
+                            f"Node dict key {k} does not match node name {v.name}"
+                        )
                 return nodes
-            elif type(nodes) in (set, list, tuple):
+            if type(nodes) in (set, list, tuple):
                 nodes_dict = {node.name : node for node in nodes}
+                if len(nodes) != len(nodes_dict):
+                    raise ValueError(
+                        "Duplicate node names detected"
+                    )
                 return nodes_dict
             raise TypeError(f"Nodes needs to be a list, set, tuple, or dict, got {type(nodes)}")
+        
         self.nodes_dict = make_nodes_dict(nodes)
         self.start_node = start_node
         self.trace_log = []
