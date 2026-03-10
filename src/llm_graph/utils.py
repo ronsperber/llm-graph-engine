@@ -2,9 +2,10 @@
 module containing any utility functions
 """
 from typing import Callable
+from pydantic import BaseModel, ValidationError
 import functools
 
-def tool_call(input_key: str, output_key: str) -> Callable:
+def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -> Callable:
     """
     decorator to turn a function into a usable callable for a FunctionalNode
     Parameters
@@ -13,6 +14,8 @@ def tool_call(input_key: str, output_key: str) -> Callable:
         key used to get the inputs to the function
     output_key: str
         key used to return the output
+    model: BaseModel | None
+        model to validate the arguments against
     """
     def decorator(func):
 
@@ -30,6 +33,15 @@ def tool_call(input_key: str, output_key: str) -> Callable:
             # make sure it's a dict of arguments
             if not isinstance(kwargs, dict):
                 raise TypeError(f"{input_key} must be dict of arguments")
+            # validate the arguments against the model
+            if model is not None:
+                try:
+                    validated = model.model_validate(kwargs)
+                    kwargs = validated.model_dump()
+                except ValidationError as e:
+                    tool_success = False
+                    result = str(e)
+                    return {output_key: result, f"{output_key}_success": tool_success}
             # apply the function and return it as a value in the dict
             # if the function fails do to an exception we return the exception as well
             try:
