@@ -164,12 +164,18 @@ class GraphRunner:
             name = step.get("name")
             node_input = step.get("node_input")
             node_output = step.get("node_output")
+            node_type = step.get("node_type")
             next_node = step.get("next_node_name")
+            execution_time = step.get("execution_time")
+            timestamp = step.get("timestamp")
             print(f"Step {step_num}")
             print(f"  Node: {name}")
+            print(f"  Node type: {node_type}")
             print(f"  Input: {node_input}")
             print(f"  Output: {node_output}")
             print(f"  Next: {next_node if next_node is not None else 'TERMINAL'}")
+            print(f"  Execution time: {execution_time}")
+            print(f"  Timestamp: {timestamp}")
             print()
 
     def matplotlib_trace(self, branch_color_map: dict|None = None):
