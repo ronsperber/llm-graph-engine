@@ -4,6 +4,7 @@ which maintains state_dict and executes nodes
 """
 import copy
 import time
+from datetime import datetime
 from typing import List, Dict, Set, Literal
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -167,14 +168,15 @@ class GraphRunner:
             node_type = step.get("node_type")
             next_node = step.get("next_node_name")
             execution_time = step.get("execution_time")
-            timestamp = step.get("timestamp")
+            ts = step.get("timestamp")
+            timestamp = datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M:%S")
             print(f"Step {step_num}")
             print(f"  Node: {name}")
             print(f"  Node type: {node_type}")
             print(f"  Input: {node_input}")
             print(f"  Output: {node_output}")
             print(f"  Next: {next_node if next_node is not None else 'TERMINAL'}")
-            print(f"  Execution time: {execution_time}")
+            print(f"  Execution time: {execution_time:.02f}")
             print(f"  Timestamp: {timestamp}")
             print()
 
