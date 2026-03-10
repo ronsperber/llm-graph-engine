@@ -41,7 +41,8 @@ def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -
                 except ValidationError as e:
                     tool_success = False
                     result = str(e)
-                    return {output_key: result, f"{output_key}_success": tool_success}
+                    return {output_key: result, f"{output_key}_success": tool_success, f"{output_key}_args": kwargs}
+                    
             # apply the function and return it as a value in the dict
             # if the function fails do to an exception we return the exception as well
             try:
@@ -52,7 +53,7 @@ def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -
                 result = str(e)
                 tool_success = False
 
-            return {output_key: result, f"{output_key}_success": tool_success}
+            return {output_key: result, f"{output_key}_success": tool_success, f"{output_key}_args": kwargs}
 
         return wrapper
 
