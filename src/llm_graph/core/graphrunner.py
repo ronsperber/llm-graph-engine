@@ -129,6 +129,7 @@ class GraphRunner:
                     "next_node_name": node.next_node_name,
                     "execution_time": execution_time,
                     "timestamp": time.time()
+                }
             )
             self.state_dict.update(delta)
             # if tokens were used, track those
