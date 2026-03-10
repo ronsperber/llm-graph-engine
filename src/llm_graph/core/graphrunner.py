@@ -5,7 +5,7 @@ which maintains state_dict and executes nodes
 import copy
 import time
 from datetime import datetime
-from typing import List, Dict, Set, Literal
+from typing import List, Dict, Set, Literal, Any
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from .nodes import GraphNode
@@ -87,7 +87,7 @@ class GraphRunner:
         if not isinstance(input, dict):
             raise TypeError("Input must be a dict")
         if reset_trace:
-            self.trace_log = []
+            self.trace_log: list[dict[str, Any]] = []
         # start by copying the input into the state_dict
         self.state_dict = copy.deepcopy(input)
         current_node_name = self.start_node
@@ -176,7 +176,7 @@ class GraphRunner:
             print(f"  Input: {node_input}")
             print(f"  Output: {node_output}")
             print(f"  Next: {next_node if next_node is not None else 'TERMINAL'}")
-            print(f"  Execution time: {execution_time:.02f}")
+            print(f"  Execution time: {execution_time * 1000:.1f} ms")
             print(f"  Timestamp: {timestamp}")
             print()
 
