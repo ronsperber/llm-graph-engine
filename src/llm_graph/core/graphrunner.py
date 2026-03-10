@@ -3,6 +3,7 @@ module to hold GraphRunner class
 which maintains state_dict and executes nodes
 """
 import copy
+import time
 from typing import List, Dict, Set, Literal
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
@@ -113,7 +114,10 @@ class GraphRunner:
                         break
             # pass the state to the node, execute, and get the delta back
             node = self.nodes_dict[current_node_name]
+            start_time = time.time()
             delta = node.execute(self.state_dict)
+            end_time = time.time()
+            execution_time = end_time - start_time
             # update the trace_log
             self.trace_log.append(
                 {
@@ -121,8 +125,10 @@ class GraphRunner:
                     "name" : node.name,
                     "node_input": node.last_input,
                     "node_output": node.last_output,
-                    "next_node_name": node.next_node_name
-                }
+                    "node_type": type(node).__name__,
+                    "next_node_name": node.next_node_name,
+                    "execution_time": execution_time,
+                    "timestamp": time.time()
             )
             self.state_dict.update(delta)
             # if tokens were used, track those
