@@ -21,7 +21,8 @@ def tool_call(input_key: str, output_key: str) -> Callable:
             """
             wrapper function used with the original function
             """
-
+            # create flag about whether tool call succeeded
+            tool_success = True
             if input_key not in state:
                 raise KeyError(f"{input_key} missing from state")
             # get the arguments to the function
@@ -30,9 +31,16 @@ def tool_call(input_key: str, output_key: str) -> Callable:
             if not isinstance(kwargs, dict):
                 raise TypeError(f"{input_key} must be dict of arguments")
             # apply the function and return it as a value in the dict
-            result = func(**kwargs)
+            # if the function fails do to an exception we return the exception as well
+            try:
+                result = func(**kwargs)
+            except Exception as e:
+                # if the function can't be applied, store the exception and set
+                # success to False
+                result = str(e)
+                tool_success = False
 
-            return {output_key: result}
+            return {output_key: result, f"{output_key}_success": tool_success}
 
         return wrapper
 
