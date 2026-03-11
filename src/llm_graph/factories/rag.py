@@ -17,6 +17,6 @@ def create_retrieval_node(
                 combined = "\n\n".join(docs) if docs else ""
         else:
             combined = ""
-        return resp | {"inject_text": combined}
+        return resp | {"retrieved_docs": combined}
     node = FunctionalNode(func=func, name=name, next_node_name=next_node_name)
     return node
