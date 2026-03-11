@@ -77,6 +77,7 @@ class LLMCall:
         """
         # get the history
         history = list(state.get("message_history", []))
+        history = history.copy()
         # if there is a prompt_template, use the state to populate fields
         if self.prompt_template:
             try:
