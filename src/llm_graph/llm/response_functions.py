@@ -34,7 +34,7 @@ def dummy_llm_response_fn(
 def OpenAI_response_fn(
         client: OpenAI,
         model : str = "gpt-5.2",
-) -> Callable:
+) -> Callable[list[ChatCompletionMessageParam], dict[str,Any]]:
     """
     creates a response_fn that can go in to an LLMCall
     Parameters

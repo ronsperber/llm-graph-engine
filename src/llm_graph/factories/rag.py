@@ -2,14 +2,7 @@ from typing import Callable, Any
 from openai.types.chat import ChatCompletionMessageParam
 from llm_graph.core.nodes import FunctionalNode
 from llm_graph.tools import make_chroma_search_tool
-from llm_graph.llm.llm_call import LLMCall
-
-
-def default_llm_prompt(
-    query_key = "user_query"
-):
-    prompt = f"Answer the user query : {{{query_key}}}"
-    return prompt
+from .llm import default_llm_prompt, create_llm_node
 
 def create_retrieval_node(
     path: str,
@@ -25,7 +18,7 @@ def create_retrieval_node(
         resp = tool(ret_key)
         if resp['retrieved_results_success']:
                 docs = resp["retrieved_results"].get("documents", [[]])[0]
-                combined = "\n\n".join(docs) if docs else ""
+                combined = "\n\nDOCUMENT:\n".join(docs) if docs else ""
         else:
             combined = ""
         return resp | {"retrieved_context": combined}
@@ -54,23 +47,21 @@ def create_rag_llm_node(
     query_key: str = "user_query",
     prompt_template: str | None = None,
     max_history_pairs: int = 10
-):
+) -> FunctionalNode:
     if prompt_template is None:
         prompt_template = default_llm_prompt(query_key)
-    rag_prompt = wrap_rag_prompt(prompt_template)
-    llm = LLMCall(
+    prompt_template = wrap_rag_prompt(
+        prompt_template
+    )
+    return create_llm_node(
         response_fn=response_fn,
-        prompt_template=rag_prompt,
-        max_history_pairs=max_history_pairs,
-        query_key=query_key
-    )
-
-    return FunctionalNode(
-        func=llm,
         name=name,
-        next_node_name=next_node_name
+        prompt_template=prompt_template,
+        query_key=query_key,
+        next_node_name=next_node_name,
+        max_history_pairs=max_history_pairs
     )
-
+    
 def create_rag_query_pair(
     path: str,
     collection_name: str,
