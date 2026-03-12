@@ -9,3 +9,11 @@ dependencies = []
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

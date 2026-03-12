@@ -55,4 +55,3 @@ def test_tool_call_preserves_function_metadata():
 
     assert my_func.__name__ == "my_func"
     assert "Example docstring." in (my_func.__doc__ or "")
-

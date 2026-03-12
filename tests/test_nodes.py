@@ -55,4 +55,3 @@ def test_conditionalnode_sets_next_node_name_and_returns_empty_dict():
     out_false = node.execute({"flag": False})
     assert out_false == {}
     assert node.next_node_name == "next_if_false"
-

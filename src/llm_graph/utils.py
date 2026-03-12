@@ -1,11 +1,15 @@
 """
 module containing any utility functions
 """
+
 from typing import Callable
 from pydantic import BaseModel, ValidationError
 import functools
 
-def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -> Callable:
+
+def tool_call(
+    input_key: str, output_key: str, model: BaseModel | None = None
+) -> Callable:
     """
     decorator to turn a function into a usable callable for a FunctionalNode
     Parameters
@@ -17,6 +21,7 @@ def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -
     model: BaseModel | None
         model to validate the arguments against
     """
+
     def decorator(func):
 
         @functools.wraps(func)
@@ -41,7 +46,11 @@ def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -
                 except ValidationError as e:
                     tool_success = False
                     result = str(e)
-                    return {output_key: result, f"{output_key}_success": tool_success, f"{output_key}_args": kwargs}                    
+                    return {
+                        output_key: result,
+                        f"{output_key}_success": tool_success,
+                        f"{output_key}_args": kwargs,
+                    }
             # apply the function and return it as a value in the dict
             # if the function fails do to an exception we return the exception as well
             try:
@@ -52,14 +61,19 @@ def tool_call(input_key: str, output_key: str, model: BaseModel | None = None) -
                 result = str(e)
                 tool_success = False
 
-            return {output_key: result, f"{output_key}_success": tool_success, f"{output_key}_args": kwargs}
+            return {
+                output_key: result,
+                f"{output_key}_success": tool_success,
+                f"{output_key}_args": kwargs,
+            }
+
         # store the tool metadata
         wrapper.tool_meta = {
             "input_key": input_key,
             "output_key": output_key,
             "schema_model": model,
-            "tool_name": func.__name__
-            }
+            "tool_name": func.__name__,
+        }
         # store the original function
         wrapper.original_func = func
         return wrapper

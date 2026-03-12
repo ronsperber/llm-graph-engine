@@ -12,7 +12,9 @@ def test_make_chroma_search_tool_calls_chromadb_and_returns_results(mock_client_
     mock_client.get_collection.return_value = mock_collection
     mock_client_cls.return_value = mock_client
 
-    tool = make_chroma_search_tool(path="/tmp/chroma", collection_name="test_collection")
+    tool = make_chroma_search_tool(
+        path="/tmp/chroma", collection_name="test_collection"
+    )
 
     state = {"retrieval_args": {"query": "hello", "n_results": 2}}
     result = tool(state)
@@ -23,4 +25,3 @@ def test_make_chroma_search_tool_calls_chromadb_and_returns_results(mock_client_
 
     assert result["retrieved_results"] == {"docs": ["doc1"]}
     assert result["retrieved_results_success"] is True
-

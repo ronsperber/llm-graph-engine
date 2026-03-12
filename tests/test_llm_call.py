@@ -18,7 +18,10 @@ def test_json_parse_invalid_json_returns_fallback_dict():
 
 def test_llmcall_uses_query_key_when_no_template():
     def response_fn(history):
-        return {"raw_output": '{"answer": "ok"}', "usage": {"prompt_tokens": 1, "completion_tokens": 2}}
+        return {
+            "raw_output": '{"answer": "ok"}',
+            "usage": {"prompt_tokens": 1, "completion_tokens": 2},
+        }
 
     llm_call = LLMCall(response_fn=response_fn)
     state = {"user_query": "Hello"}
@@ -83,4 +86,3 @@ def test_llmcall_raises_when_prompt_template_missing_state_field():
         llm_call({})
 
     assert "Prompt template missing required state field" in str(excinfo.value)
-

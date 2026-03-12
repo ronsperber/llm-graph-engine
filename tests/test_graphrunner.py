@@ -5,7 +5,9 @@ from llm_graph.core.nodes import FunctionalNode, ConditionalNode
 
 
 def _make_noop_node(name: str, next_node_name: str | None = None):
-    return FunctionalNode(func=lambda state: {}, name=name, next_node_name=next_node_name)
+    return FunctionalNode(
+        func=lambda state: {}, name=name, next_node_name=next_node_name
+    )
 
 
 def test_execute_raises_type_error_for_non_dict_input():
@@ -115,7 +117,9 @@ def test_max_node_visits_zero_with_error_raises_before_node_executes():
         return {}
 
     node = FunctionalNode(func=func, name="A", next_node_name="A")
-    runner = GraphRunner(nodes=[node], start_node="A", max_node_visits=0, on_max_visits="error")
+    runner = GraphRunner(
+        nodes=[node], start_node="A", max_node_visits=0, on_max_visits="error"
+    )
 
     with pytest.raises(RuntimeError):
         runner.execute({})
@@ -131,7 +135,9 @@ def test_max_node_visits_zero_with_exit_terminates_early_without_execution():
         return {}
 
     node = FunctionalNode(func=func, name="A", next_node_name="A")
-    runner = GraphRunner(nodes=[node], start_node="A", max_node_visits=0, on_max_visits="exit")
+    runner = GraphRunner(
+        nodes=[node], start_node="A", max_node_visits=0, on_max_visits="exit"
+    )
 
     result = runner.execute({})
 
@@ -148,10 +154,11 @@ def test_unrecognized_on_max_visits_value_treated_like_exit():
         return {}
 
     node = FunctionalNode(func=func, name="A", next_node_name="A")
-    runner = GraphRunner(nodes=[node], start_node="A", max_node_visits=0, on_max_visits="something_else")
+    runner = GraphRunner(
+        nodes=[node], start_node="A", max_node_visits=0, on_max_visits="something_else"
+    )
 
     result = runner.execute({})
 
     assert result["terminated_early"] is True
     assert executed == []
-

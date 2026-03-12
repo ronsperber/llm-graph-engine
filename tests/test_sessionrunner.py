@@ -72,4 +72,3 @@ def test_session_keys_default_none_behaves_like_empty_list():
     assert "session_value" in first["state_dict"]
     assert "session_value" in second["state_dict"]
     assert runner.session_dict == {}
-

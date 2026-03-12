@@ -42,4 +42,3 @@ def test_dummy_llm_response_fn_with_none_history_raises_index_error():
         return
     # if no error was raised, then behavior changed and this should fail
     assert False, "Expected IndexError when history is None/empty"
-

@@ -1,18 +1,16 @@
 """
-module to hold SessionRunner. SessionRunner class is meant to hold a GraphRunner 
-for multiple executions and keep any state entries that need to be held across 
+module to hold SessionRunner. SessionRunner class is meant to hold a GraphRunner
+for multiple executions and keep any state entries that need to be held across
 multiple runs
 """
+
 from typing import Any
 from copy import deepcopy
 from .graphrunner import GraphRunner
 
+
 class SessionRunner:
-    def __init__(
-            self,
-            graph: GraphRunner,
-            session_keys: list | None = None
-    ):
+    def __init__(self, graph: GraphRunner, session_keys: list | None = None):
         """
         Parameters
         ----------
@@ -29,10 +27,7 @@ class SessionRunner:
         self.session_dict = {}
         self.trace_logs = []
 
-    def execute(
-            self,
-            input : dict[str, Any]
-    ):
+    def execute(self, input: dict[str, Any]):
         """
         main execution function for the runner
         Parameters
