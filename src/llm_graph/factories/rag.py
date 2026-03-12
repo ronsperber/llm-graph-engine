@@ -29,14 +29,14 @@ def wrap_rag_prompt(prompt_template: str) -> str:
     if "{retrieved_context}" in prompt_template:
         return prompt_template
     rag_wrapper = """
-    Use the following retrieved context to answer the question.
-    Context :
-    {{retrieved_context}}
+Use the following retrieved context to answer the question.
+Context :
+{{retrieved_context}}
 
-    ---------------------
+---------------------
 
-    {prompt_template}
-    """
+{prompt_template}
+"""
 
     return rag_wrapper.format(prompt_template=prompt_template.strip())
 
@@ -61,7 +61,7 @@ def create_rag_llm_node(
         next_node_name=next_node_name,
         max_history_pairs=max_history_pairs
     )
-    
+
 def create_rag_query_pair(
     path: str,
     collection_name: str,
