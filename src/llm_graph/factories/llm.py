@@ -26,6 +26,8 @@ def create_llm_node(
     query_key: str = "user_query",
     next_node_name: str | None = None,
     max_history_pairs: int = 10,
+    temperature : float | None = None,
+    max_tokens : int | None = None,
 ) -> FunctionalNode:
     if prompt_template is None:
         prompt_template = default_llm_prompt(query_key)
@@ -34,6 +36,8 @@ def create_llm_node(
         prompt_template=prompt_template,
         max_history_pairs=max_history_pairs,
         query_key=query_key,
+        temperature=temperature,
+        max_tokens=max_tokens
     )
 
     return FunctionalNode(func=llm, name=name, next_node_name=next_node_name)

@@ -131,7 +131,8 @@ def create_tool_llm_node(
         prompt_template=tool_prompt_template,
         query_key=query_key,
         next_node_name=next_node_name,
-        max_history_pairs=max_history_pairs
+        max_history_pairs=max_history_pairs,
+        temperature=0.1
     )
 
 def create_tool_node(
