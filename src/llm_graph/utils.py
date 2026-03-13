@@ -3,6 +3,7 @@ module containing any utility functions
 """
 
 from typing import Callable
+from inspect import signature
 from pydantic import BaseModel, ValidationError
 import functools
 
@@ -73,6 +74,8 @@ def tool_call(
             "output_key": output_key,
             "schema_model": model,
             "tool_name": func.__name__,
+            "tool_doc": func.__doc__,
+            "tool_signature": str(signature(func)),
         }
         # store the original function
         wrapper.original_func = func
