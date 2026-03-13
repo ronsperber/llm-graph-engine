@@ -4,30 +4,8 @@ is callable to be used in a FunctionalNode to communicate
 with an LLM
 """
 
-from typing import Callable, Any
-from openai.types.chat import ChatCompletionMessageParam
-import json
-
-
-def json_parse(s: str):
-    """
-    helper function to try to parse output into a dict
-    Parameters
-    ----------
-    s : str
-        raw text from LLM
-    Returns
-    -------
-        parsed : dict
-            when the string is in proper JSON format, this is the parsed dict from that
-            when that was unable to be done, it returns a dict with 'raw_output' and 'parse_error'
-            keys
-    """
-    try:
-        parsed = json.loads(s)
-    except Exception:
-        parsed = {"raw_output": s, "parse_error": True}
-    return parsed
+from typing import Any
+from llm_graph.utils import ResponseFn, json_parse
 
 
 class LLMCall:
@@ -38,10 +16,12 @@ class LLMCall:
 
     def __init__(
         self,
-        response_fn: Callable[[list[ChatCompletionMessageParam]], dict[str, Any]],
+        response_fn: ResponseFn,
         prompt_template: str | None = None,
         max_history_pairs: int = 10,
         query_key: str = "user_query",
+        temperature : float | None = None,
+        max_tokens: int | None = None,
     ):
         """
         initialization
@@ -56,11 +36,17 @@ class LLMCall:
             how many query/response pairs to keep in the history
         query_key: str
             what the key is that has the user query in it
+        temperature : float | None
+            optional temperature to pass to the client for generating a response
+        max_tokens : int | None
+            optional limit on tokens to use
         """
         self.prompt_template = prompt_template
         self.response_fn = response_fn
         self.max_history_pairs = max_history_pairs
         self.query_key = query_key
+        self.temperature = temperature
+        self.max_tokens = max_tokens
 
     def __call__(self, state: dict[str, Any]) -> dict[str, Any]:
         """
@@ -84,7 +70,11 @@ class LLMCall:
         prompt = self._build_prompt(state)
         messagelist = history + [{"role": "user", "content": prompt}]
         # get the response from the response_fn
-        response = self.response_fn(messagelist)
+        response = self.response_fn(
+            history=messagelist,
+            temperature=self.temperature,
+            max_tokens=self.max_tokens
+            )
         # get the raw string and append the output to the message history
         raw = response.get("raw_output", "")
         new_history = messagelist + [{"role": "assistant", "content": raw}]

@@ -1,5 +1,5 @@
 from typing import Callable, Any
-from openai.types.chat import ChatCompletionMessageParam
+from llm_graph.utils import ResponseFn
 from llm_graph.core.nodes import FunctionalNode
 from llm_graph.tools import make_chroma_search_tool
 from .llm import default_llm_prompt, create_llm_node
@@ -46,7 +46,7 @@ Context :
 
 
 def create_rag_llm_node(
-    response_fn: Callable[[list[ChatCompletionMessageParam]], dict[str, Any]],
+    response_fn: ResponseFn,
     name: str,
     next_node_name: str | None = None,
     query_key: str = "user_query",

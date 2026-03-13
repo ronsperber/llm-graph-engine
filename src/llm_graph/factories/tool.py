@@ -1,9 +1,8 @@
 from inspect import signature
 from typing import Callable, Any
-from openai.types.chat import ChatCompletionMessageParam
 from llm_graph.core.nodes import FunctionalNode
 from .llm import create_llm_node
-from llm_graph.utils import tool_call
+from llm_graph.utils import tool_call, ResponseFn
 
 def get_tool_metadata(tool:Callable) -> dict[str, Any]:
     """
@@ -112,7 +111,7 @@ The output should be a JSON that looks as follows, making sure typing is correct
 
 def create_tool_llm_node(
     tool : Callable,
-    response_fn: Callable[[list[ChatCompletionMessageParam]], dict[str, Any]],
+    response_fn: ResponseFn,
     name : str,
     next_node_name: str | None = None,
     prompt_template: str | None = None,
@@ -148,7 +147,7 @@ def create_tool_node(
 
 def create_tool_llm_pair(
     tool: Callable,
-    response_fn: Callable[[list[ChatCompletionMessageParam]], dict[str, Any]],
+    response_fn: ResponseFn,
     llm_node_name: str,
     tool_node_name : str,
     prompt_template : str | None = None,

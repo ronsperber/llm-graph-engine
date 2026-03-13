@@ -2,11 +2,40 @@
 module containing any utility functions
 """
 
-from typing import Callable
+from typing import Callable, Protocol, Any
 from inspect import signature
 from pydantic import BaseModel, ValidationError
+from openai.types.chat import ChatCompletionMessageParam
 import functools
+import json
 
+
+def json_parse(s: str):
+    """
+    helper function to try to parse output into a dict
+    Parameters
+    ----------
+    s : str
+        raw text from LLM
+    Returns
+    -------
+        parsed : dict
+            when the string is in proper JSON format, this is the parsed dict from that
+            when that was unable to be done, it returns a dict with 'raw_output' and 'parse_error'
+            keys
+    """
+    try:
+        parsed = json.loads(s)
+    except Exception:
+        parsed = {"raw_output": s, "parse_error": True}
+    return parsed
+
+class ResponseFn(Protocol):
+    def __call__(
+        self,
+        messages: list[ChatCompletionMessageParam],
+        **kwargs: Any
+    ) -> dict[str, Any]: ...
 
 def tool_call(
     input_key: str, output_key: str, model: BaseModel | None = None
