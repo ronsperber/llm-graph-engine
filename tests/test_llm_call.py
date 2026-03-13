@@ -17,7 +17,7 @@ def test_json_parse_invalid_json_returns_fallback_dict():
 
 
 def test_llmcall_uses_query_key_when_no_template():
-    def response_fn(history):
+    def response_fn(history, **kwargs):
         return {
             "raw_output": '{"answer": "ok"}',
             "usage": {"prompt_tokens": 1, "completion_tokens": 2},
@@ -38,7 +38,7 @@ def test_llmcall_uses_query_key_when_no_template():
 def test_llmcall_with_prompt_template_formats_from_state():
     captured_prompts = []
 
-    def response_fn(history):
+    def response_fn(history, **kwargs):
         captured_prompts.append(history[-1]["content"])
         return {"raw_output": '{"done": true}'}
 
