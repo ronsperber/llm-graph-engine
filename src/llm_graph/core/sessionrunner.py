@@ -26,6 +26,8 @@ class SessionRunner:
         # set the session_dict and logs to empty dict/list respectively
         self.session_dict = {}
         self.trace_logs = []
+        self.out_tokens = 0
+        self.in_tokens = 0
 
     def execute(self, input: dict[str, Any]):
         """
@@ -47,6 +49,9 @@ class SessionRunner:
         trace_log = deepcopy(response.get("trace_log") or [])
         # add the trace_log to the list of trace_logs
         self.trace_logs.append(trace_log)
+        # add usage
+        self.out_tokens += self.graph.out_tokens
+        self.in_tokens += self.graph.in_tokens
         # update the session_dict with any key-value pairs returned where the key
         # is a session key
         self.session_dict.update(
