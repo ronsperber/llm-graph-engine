@@ -186,13 +186,16 @@ def wrap_tool_output(
 The following tool was called:
 {tool_name}
 
-Tool documentation (if any) :
+Tool description :
 {tool_doc}
 
-Tool output: 
+The tool returned the following output:
 {{{output_key}}}
 
+Use the tool output when generating your response.
 ------------------------------
+If the tool output has the answer , use that directly.
+Instructions:
 
 {prompt_template}
 """
