@@ -100,6 +100,7 @@ The signature for the tool is:
 {prompt_template}
 
 ---------------------
+Return ONLY valid JSON. Do not include explantions or markdown.
 
 The output should be a JSON that looks as follows, making sure typing is correct :
 {{{{
