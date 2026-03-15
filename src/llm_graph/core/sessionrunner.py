@@ -26,6 +26,7 @@ class SessionRunner:
         # set the session_dict and logs to empty dict/list respectively
         self.session_dict = {}
         self.trace_logs = []
+        # set initial token usage to 0
         self.out_tokens = 0
         self.in_tokens = 0
 

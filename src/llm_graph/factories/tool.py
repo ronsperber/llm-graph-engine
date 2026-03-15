@@ -174,3 +174,59 @@ def create_tool_llm_pair(
     
     return llm_node, tool_node
     
+def wrap_tool_output(
+    tool : Callable,
+    prompt_template : str,
+) -> str:
+    metadata = get_tool_metadata(tool)
+    tool_doc = metadata.get("tool_doc", "No docstring provided")
+    tool_name = metadata.get("tool_name", tool.__name__)
+    output_key = metadata.get("output_key",f"{tool_name}_output")
+    prompt_template = f"""
+The following tool was called:
+{tool_name}
+
+Tool documentation (if any) :
+{tool_doc}
+
+Tool output: 
+{{{output_key}}}
+
+------------------------------
+
+{prompt_template}
+"""
+    return prompt_template.strip()
+
+def default_tool_summary_prompt(
+    tool : Callable,
+    query_key : str = "user_query"
+) -> str:
+    metadata = get_tool_metadata(tool)
+    tool_name = metadata.get("tool_name", tool.__name__)
+    tool_doc = metadata.get("tool_doc", "No docstring provided")
+    output_key = metadata.get("output_key", f"{tool_name}_output")
+    prompt = f"""
+A tool named {tool_name} was called.
+
+Tool description:
+{tool_doc}
+
+The tool returned the following output:
+{{{output_key}}}
+
+Use this output to answer the user's quertion.
+
+The question is :
+{{{query_key}}} 
+
+Return ONLY valid JSON with the format and nothing else:
+
+{{{{
+    "answer" : "<your answer>"
+}}}}
+
+Your answer should clearly address the user question and incorporate the tool output.
+"""
+
+    return prompt.strip()
