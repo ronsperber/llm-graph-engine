@@ -70,6 +70,14 @@ Input should be wrapped as a dictionary under key '{input_key}'.
 Generate a JSON object with a single key '{input_key}' containing valid arguments
 for this tool. Ensure all arguments are properly typed.
 
+Return ONLY valid JSON. Do not include explantions or markdown.
+
+The output should be a JSON that looks as follows, making sure typing is correct :
+
+{{{{
+    '{input_key}' : {{{{'arg_1' : value, 'arg_2': value, ....,}}}}
+}}}}
+
 The user query is: {{{query_key}}}
 """
     return prompt.strip()
@@ -103,6 +111,7 @@ The signature for the tool is:
 Return ONLY valid JSON. Do not include explantions or markdown.
 
 The output should be a JSON that looks as follows, making sure typing is correct :
+
 {{{{
     '{input_key}' : {{{{'arg_1' : value, 'arg_2': value, ....,}}}}
 }}}}
@@ -238,3 +247,78 @@ Your answer should clearly address the user question and incorporate the tool ou
 """
 
     return prompt.strip()
+
+def create_tool_analysis_node(
+    tool : Callable,
+    response_fn: ResponseFn,
+    name : str,
+    next_node_name : str | None = None,
+    query_key : str = "user_query",
+    prompt_template: str | None = None,
+    max_history_pairs : int = 10,
+):
+    if prompt_template is None:
+        prompt_template = default_tool_summary_prompt(tool=tool, query_key=query_key)
+    else:
+        prompt_template = wrap_tool_output(
+            tool=tool,
+            prompt_template=prompt_template
+        )
+    node = create_llm_node(
+        response_fn = response_fn,
+        name=name,
+        prompt_template=prompt_template,
+        query_key=query_key,
+        next_node_name=next_node_name,
+        max_history_pairs=max_history_pairs
+    )
+    return node
+
+def create_retry_conditional(
+    llm_analysis_node: FunctionalNode,
+    retry_llm_node : FunctionalNode,
+    retry_tool_node : FunctionalNode,
+    tool_output_key : str,
+)-> Callable:
+    analysis_name = llm_analysis_node.name
+    retry_llm_name = retry_llm_node.name
+    retry_tool_name = retry_tool_node.name
+    success_key = f"{tool_output_key}_success"
+    def conditional_retry(state: dict) -> str:
+        if state.get("parse_error", False):
+            return retry_llm_name
+        if not state.get(success_key, True):
+            return retry_tool_name
+        return analysis_name
+    
+    return conditional_retry
+
+def retry_llm_prompt(
+    tool: Callable,
+    state: dict[str, Any],
+    prompt_template: str | None = None,
+    query_key:str = "user_query",
+    ):
+    metadata = get_tool_metadata(tool)
+    tool_name = metadata.get("tool_name", tool.__name__)
+    parse_error = state["parse_error_message"]
+    raw_output = state["raw_output"]
+    if prompt_template is None:
+        base_prompt = default_tool_prompt(tool=tool, query_key=query_key)
+    else:
+        base_prompt = wrap_tool_prompt(tool=tool, prompt_template=prompt_template)
+    retry_prompt = f"""
+The previous attempt to create tool arguments for {tool_name} failed to parse as JSON
+
+The raw output from the previous attempt was {raw_output}
+
+This gave the error message {parse_error}
+
+Please correct the errors to proper JSON for the tool call
+
+-------------
+{base_prompt}
+"""
+    return retry_prompt
+
+
