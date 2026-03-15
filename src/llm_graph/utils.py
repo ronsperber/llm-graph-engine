@@ -25,10 +25,17 @@ def json_parse(s: str):
             keys
     """
     try:
-        parsed = json.loads(s)
-    except Exception:
-        parsed = {"raw_output": s, "parse_error": True}
-    return parsed
+        parsed = json.loads(s) 
+        if not isinstance(parsed, dict):
+            raise TypeError(f"Expected JSON object (dict), got {type(parsed).__name__}")
+        return {"parse_error": False} | parsed
+    except Exception as e:
+        return {
+            "raw_output": s,
+            "parse_error_message": f"{type(e).__name__: {e}}",
+            "parse_error": True,
+            }
+
 
 class ResponseFn(Protocol):
     def __call__(
