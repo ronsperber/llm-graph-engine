@@ -81,6 +81,8 @@ def wrap_tool_prompt(tool: Callable, prompt_template: str) -> str:
     tool_signature = tool_meta.get("tool_signature", str(signature(tool)))
     tool_doc = tool_meta.get("tool_doc") or "No docstring provided."
     input_key = tool_meta.get("input_key", f"tool_{tool_name}_args")
+    if f"{{{input_key}}}" in prompt_template:
+        return prompt_template
     tool_wrapper = f"""
 You are to create return a JSON with key {input_key} and the arguments for the tool {tool_name}
 
@@ -182,6 +184,8 @@ def wrap_tool_output(
     tool_doc = metadata.get("tool_doc", "No docstring provided")
     tool_name = metadata.get("tool_name", tool.__name__)
     output_key = metadata.get("output_key",f"{tool_name}_output")
+    if f"{{{output_key}}}" in prompt_template:
+        return prompt_template
     prompt_template = f"""
 The following tool was called:
 {tool_name}
