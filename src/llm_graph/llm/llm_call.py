@@ -6,7 +6,7 @@ with an LLM
 
 from typing import Any, Callable
 from llm_graph.utils import ResponseFn, json_parse
-
+PromptTemplate = str | Callable[[dict(str, Any), str], str] | None
 
 class LLMCall:
     """
@@ -17,7 +17,7 @@ class LLMCall:
     def __init__(
         self,
         response_fn: ResponseFn,
-        prompt_template: str | Callable[[dict(str,Any)],str] |None = None,
+        prompt_template: PromptTemplate,
         max_history_pairs: int = 10,
         query_key: str = "user_query",
         temperature : float | None = None,
@@ -70,7 +70,7 @@ class LLMCall:
         prompt = self._build_prompt(state)
         messagelist = history + [{"role": "user", "content": prompt}]
         # get the response from the response_fn
-        response = self.response_fn(
+        response: dict[str, Any]= self.response_fn(
             history=messagelist,
             temperature=self.temperature,
             max_tokens=self.max_tokens
@@ -89,7 +89,7 @@ class LLMCall:
         template = self.prompt_template(state) if callable(self.prompt_template) else self.prompt_template
         if template:
             try:
-                return self.prompt_template.format(**state)
+                return template.format(**state)
             except KeyError as e:
                 raise KeyError(f"Prompt template missing required state field: {e}")
         elif self.query_key in state:

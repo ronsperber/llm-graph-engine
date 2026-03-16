@@ -1,6 +1,6 @@
 from llm_graph.utils import ResponseFn
 from llm_graph.core.nodes import FunctionalNode
-from llm_graph.llm.llm_call import LLMCall
+from llm_graph.llm.llm_call import LLMCall, PromptTemplate
 
 
 def default_llm_prompt(query_key: str):
@@ -22,7 +22,7 @@ The user query is:
 def create_llm_node(
     response_fn: ResponseFn,
     name: str,
-    prompt_template: str | None = None,
+    prompt_template: PromptTemplate,
     query_key: str = "user_query",
     next_node_name: str | None = None,
     max_history_pairs: int = 10,

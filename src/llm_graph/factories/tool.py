@@ -2,7 +2,7 @@ from inspect import signature
 from typing import Callable, Any
 from llm_graph.core.nodes import FunctionalNode
 from .llm import create_llm_node
-from llm_graph.utils import tool_call, ResponseFn
+from llm_graph.utils import ResponseFn
 
 def get_tool_metadata(tool:Callable) -> dict[str, Any]:
     """
@@ -175,7 +175,7 @@ def create_tool_llm_pair(
         next_node_name=tool_node_name,
         prompt_template=prompt_template,
         query_key=query_key,
-        max_history_pairs=max_history_pairs
+        max_history_pairs=max_history_pairs,
     )
 
     tool_node = create_tool_node(
@@ -256,6 +256,8 @@ def create_tool_analysis_node(
     query_key : str = "user_query",
     prompt_template: str | None = None,
     max_history_pairs : int = 10,
+    temperature: float | None = None,
+    max_tokens : int | None = None,
 ):
     if prompt_template is None:
         prompt_template = default_tool_summary_prompt(tool=tool, query_key=query_key)
@@ -270,7 +272,9 @@ def create_tool_analysis_node(
         prompt_template=prompt_template,
         query_key=query_key,
         next_node_name=next_node_name,
-        max_history_pairs=max_history_pairs
+        max_history_pairs=max_history_pairs,
+        temperature=temperature,
+        max_tokens=max_tokens
     )
     return node
 
@@ -322,3 +326,71 @@ Please correct the errors to proper JSON for the tool call
     return retry_prompt
 
 
+def retry_tool_call_prompt(
+    tool: Callable,
+    state: dict[str, Any],
+    prompt_template : str | None = None,
+    query_key : str = "user_query",
+):
+    metadata = get_tool_metadata(tool)
+    tool_name = metadata.get("tool_name", tool.__name__)
+    output_key = metadata.get("output_key", "tool_output")
+    args_key = f"{output_key}_args"
+    tool_error = state.get(output_key, "Unknown error")
+    tool_args = state.get(args_key, {})
+    if prompt_template is None:
+        base_prompt = default_tool_prompt(tool=tool, query_key=query_key)
+    else:
+        base_prompt = wrap_tool_prompt(tool=tool, prompt_template=prompt_template)
+    retry_prompt = f"""
+The attempt to call tool {tool_name} failed. 
+
+The tool returned an error message of {tool_error}. 
+
+The attempted arguments were {{{tool_args}}}
+
+Please adjust the arguments to that the tool can be called successfully.
+
+-----------------------------------------------------------------------
+
+{base_prompt}
+"""
+    return retry_prompt
+
+def create_retry_llm_prompt_func(
+    tool: Callable,
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+) -> Callable[[dict[str,Any]], str]:
+    def _call(state: dict[str, Any]) -> str:
+        return retry_llm_prompt(
+            tool=tool,
+            state=state,
+            prompt_template=prompt_template,
+            query_key=query_key
+        )
+    return _call
+
+def create_retry_llm_node(
+    tool: Callable,
+    response_fn: ResponseFn,
+    name : str,
+    prompt_template : str | None = None,
+    query_key : str = "user_query",
+    next_node_name : str | None = None,
+    max_history_pairs: int = 10,
+) -> FunctionalNode:
+    prompt_func = create_retry_llm_prompt_func(
+        tool=tool,
+        prompt_template=prompt_template,
+        query_key=query_key
+    )
+    return create_llm_node(
+        response_fn=response_fn,
+        name=name,
+        prompt_template=prompt_func,
+        query_key=query_key,
+        next_node_name=next_node_name,
+        max_history_pairs=max_history_pairs,
+        temperature=0.1
+    )
