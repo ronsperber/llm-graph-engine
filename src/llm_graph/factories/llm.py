@@ -4,6 +4,17 @@ from llm_graph.llm.llm_call import LLMCall, PromptTemplate
 
 
 def default_llm_prompt(query_key: str):
+    """
+    create default prompt for an LLM based on user query
+    Parameter
+    ---------
+    query_key : str
+        key that has user query
+    Returns
+    -------
+    str
+        default prompt template
+    """
 
     return f"""
 Answer the user query.
@@ -29,8 +40,35 @@ def create_llm_node(
     temperature: float | None = None,
     max_tokens: int | None = None,
 ) -> FunctionalNode:
+    """
+    Create functional node for sending query to LLM
+    Parameters
+    ----------
+    response_fn : ResponseFn
+        response function for the LLM
+    name : str
+        name of the node
+    prompt_template : PromptTemplate
+        prompt template for LLM
+    query_key : str
+        key that has user query
+    next_node_name : Optional[str]
+        name of next node, if any
+    max_history_pairs : int
+        number of query/response pairs to keep in history
+    temperature : Optional[float]
+        temperature to use for LLM
+    max_tokens: Optional[int]
+        limit on tokens used by LLM
+    Returns
+    -------
+    FunctionalNode
+        functional node that has the appropriate LLMCall function
+    """
+    # generate default prompt template if none is given
     if prompt_template is None:
         prompt_template = default_llm_prompt(query_key)
+    # create callable to be used for node
     llm = LLMCall(
         response_fn=response_fn,
         prompt_template=prompt_template,
