@@ -30,7 +30,7 @@ class SessionRunner:
         self.out_tokens = 0
         self.in_tokens = 0
 
-    def execute(self, input: dict[str, Any]):
+    def execute(self, input: dict[str, Any]) -> dict[str, Any]:
         """
         main execution function for the runner
         Parameters

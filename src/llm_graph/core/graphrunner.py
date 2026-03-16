@@ -72,7 +72,7 @@ class GraphRunner:
         self.max_node_visits = max_node_visits
         self.on_max_visits = on_max_visits
 
-    def execute(self, input: dict, reset_trace: bool = True):
+    def execute(self, input: dict, reset_trace: bool = True)->dict[str, Any]:
         """
         main execution path for a graph
         Parameters
@@ -155,7 +155,7 @@ class GraphRunner:
             "terminated_early": terminated_early,
         }
 
-    def get_token_usage(self):
+    def get_token_usage(self) -> dict[str, Any]:
         """
         return current token usage by the graph
         note: this does not reset at each execute call

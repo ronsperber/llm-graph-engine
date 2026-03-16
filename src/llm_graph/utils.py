@@ -10,7 +10,7 @@ import functools
 import json
 
 
-def json_parse(s: str):
+def json_parse(s: str) -> dict[str, Any]:
     """
     helper function to try to parse output into a dict
     Parameters

@@ -1,12 +1,12 @@
 """
 module of common tools to use
 """
-
+from typing import Callable
 import chromadb
 from .utils import tool_call
 
 
-def make_chroma_search_tool(path: str, collection_name: str):
+def make_chroma_search_tool(path: str, collection_name: str) -> Callable:
     """
     Creates a tool to use ChromaDB to do a similarity search
     Parameters
