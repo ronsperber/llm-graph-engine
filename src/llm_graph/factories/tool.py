@@ -4,7 +4,8 @@ from llm_graph.core.nodes import FunctionalNode
 from .llm import create_llm_node
 from llm_graph.utils import ResponseFn
 
-def get_tool_metadata(tool:Callable) -> dict[str, Any]:
+
+def get_tool_metadata(tool: Callable) -> dict[str, Any]:
     """
     gets metadata from tool. If tool was not created with tool_meta
     attribute, reconstruct the metadata from tool itself
@@ -20,7 +21,7 @@ def get_tool_metadata(tool:Callable) -> dict[str, Any]:
     # if the tool was created with @tool_call or has an attribute called tool_meta
     # return that
     if hasattr(tool, "tool_meta") and isinstance(tool.tool_meta, dict):
-            return tool.tool_meta
+        return tool.tool_meta
     # construct the metadata from tool when it wasn't ther
     name = tool.__name__
     doc = tool.__doc__ or "No docstring provided."
@@ -28,13 +29,14 @@ def get_tool_metadata(tool:Callable) -> dict[str, Any]:
     input_key = f"tool_{name}_args"
     output_key = f"tool_{name}_output"
     return {
-        "input_key" : input_key,
-        "output_key" : output_key,
-        "schema_model" : None,
-        "tool_name" : name,
-        "tool_doc" : doc,
+        "input_key": input_key,
+        "output_key": output_key,
+        "schema_model": None,
+        "tool_name": name,
+        "tool_doc": doc,
         "tool_signature": tool_signature,
     }
+
 
 def default_tool_prompt(tool: Callable, query_key: str = "user_query") -> str:
     """
@@ -84,13 +86,34 @@ The user query is: {{{query_key}}}
 
 
 def wrap_tool_prompt(tool: Callable, prompt_template: str) -> str:
+    """
+    Take an existing prompt template to get arguments for a tool
+    and create a wrapped version of it with additional information from
+    the tool.
+    Parameters
+    ----------
+    tool : Callable
+        the tool that the prompt is for
+    prompt_template : str
+        the original prompt template
+    Returns
+    -------
+    tool_wrapper: str
+        original template wrapped with additional information
+    
+    """
+    # get the metadata for the tool and extract information to add
+    # to the prompt
     tool_meta = get_tool_metadata(tool)
     tool_name = tool_meta.get("tool_name", tool.__name__)
     tool_signature = tool_meta.get("tool_signature", str(signature(tool)))
     tool_doc = tool_meta.get("tool_doc") or "No docstring provided."
     input_key = tool_meta.get("input_key", f"tool_{tool_name}_args")
+    # if the prompt template already has a spot for the input key, we don't wrap
+    # This is in case the prompt template already is set up for the tool
     if f"{{{input_key}}}" in prompt_template:
         return prompt_template
+    # create wrapped template
     tool_wrapper = f"""
 You are to create return a JSON with key {input_key} and the arguments for the tool {tool_name}
 
@@ -122,21 +145,51 @@ The output should be a JSON that looks as follows, making sure typing is correct
 
 
 def create_tool_llm_node(
-    tool : Callable,
+    tool: Callable,
     response_fn: ResponseFn,
-    name : str,
+    name: str,
     next_node_name: str | None = None,
     prompt_template: str | None = None,
     query_key: str = "user_query",
-    max_history_pairs: int =10,
-
-
-):
+    max_history_pairs: int = 10,
+    temperature = 0.1,
+) -> FunctionalNode:
+    """
+    Create a node that will use an LLM response function to get the arguments
+    for the tool
+    Parameters
+    ----------
+    tool:Callable 
+        the tool for which arguments are needed
+    response_fn : ResponseFn
+        function used to send data to an LLM
+    name : str
+        name of the node
+    next_node_name : str | None
+        name of next node
+    prompt_template : str | None
+        prompt template used to get parameters for the tool
+    query_key : str
+        key used in the state that has the user query
+    max_history_pairs: int
+        maximum number of pairs of query/response to keep in the history
+    temperature : float
+        temperature to use for LLM to create query (low is recommended here)
+    
+    Returns
+    -------
+    FunctionaNode:
+        functional node with LLM call using the prompt wrapped with extra information
+    """
+    # use default tool prompt template if none is provided
+    # otherwise wrap prompt
     if prompt_template is None:
         tool_prompt_template = default_tool_prompt(tool=tool, query_key=query_key)
     else:
-        tool_prompt_template = wrap_tool_prompt(tool=tool, prompt_template=prompt_template)
-    
+        tool_prompt_template = wrap_tool_prompt(
+            tool=tool, prompt_template=prompt_template
+        )
+    # create the LLM node using the wrapped or default prompt
     return create_llm_node(
         response_fn=response_fn,
         name=name,
@@ -144,30 +197,74 @@ def create_tool_llm_node(
         query_key=query_key,
         next_node_name=next_node_name,
         max_history_pairs=max_history_pairs,
-        temperature=0.1
+        temperature=temperature,
     )
+
 
 def create_tool_node(
     tool: Callable,
     name: str,
     next_node_name: str | None = None
-):
+    ) -> FunctionalNode:
+    """
+    Create a node that uses a given tool as its function
+    Parameters
+    ----------
+    tool : Callable
+        tool to be executed
+    name: str
+        name of the node
+    next_node_name: str
+        name of next node
+    Returns
+    -------
+    FunctionalNode
+        FunctionalNode using tool as func, name, next_node_ndame
+    """
     return FunctionalNode(
         func=tool,
         name=name,
         next_node_name=next_node_name,
     )
 
+
 def create_tool_llm_pair(
     tool: Callable,
     response_fn: ResponseFn,
     llm_node_name: str,
-    tool_node_name : str,
-    prompt_template : str | None = None,
-    tool_node_next_node_name : str | None = None,
+    tool_node_name: str,
+    prompt_template: str | None = None,
+    tool_node_next_node_name: str | None = None,
     query_key: str = "user_query",
     max_history_pairs: int = 10,
-):
+    temperature: float = 0.1,
+) -> tuple[FunctionalNode, FunctionalNode]:
+    """
+    Create a pair of node from a tool, one of which is an LLM node
+    to create the argument key, the other to execute the tool
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    response_fn : ResponseFn
+        response function for the LLM node
+    tool_node_name : str
+        name for the tool node
+    prompt_template : str | None
+        prompt template used for generating tool args (when given)
+    tool_node_next_node_name : str | None
+        name of node that follows the tool calling node
+    query_key : str
+        the name of the key holding the user query
+    max_history_pairs : int
+        number of pairs of queries to keep in history
+    temperature : float
+        temperature used for LLM to construct tool args (low is recommended)
+    Returns
+    -------
+    llm_node, tool_node : tuple[FunctionalNode, FunctionalNode]
+        the llm_node and tool_node for these
+    """
     llm_node = create_tool_llm_node(
         tool=tool,
         response_fn=response_fn,
@@ -179,23 +276,39 @@ def create_tool_llm_pair(
     )
 
     tool_node = create_tool_node(
-        tool=tool,
-        name=tool_node_name,
-        next_node_name=tool_node_next_node_name
+        tool=tool, name=tool_node_name, next_node_name=tool_node_next_node_name
     )
-    
+
     return llm_node, tool_node
-    
+
+
 def wrap_tool_output(
-    tool : Callable,
-    prompt_template : str,
+    tool: Callable,
+    prompt_template: str,
 ) -> str:
+    """
+    Wrap a prompt_template with information including the output of a tool
+    to help an LLM analyze the output
+    Parameters
+    ----------
+    tool : Callable:
+        tool being used
+    prompt_template: str
+        initial prompt_template
+    Returns
+    -------
+    prompt_template : str
+        wrapped prompt_template with tool information
+    """
+    # get tool metadata and extract relevant fields to insert into the template
     metadata = get_tool_metadata(tool)
     tool_doc = metadata.get("tool_doc", "No docstring provided")
     tool_name = metadata.get("tool_name", tool.__name__)
-    output_key = metadata.get("output_key",f"{tool_name}_output")
+    output_key = metadata.get("output_key", f"{tool_name}_output")
+    # if the template already has the output_key, return as is
     if f"{{{output_key}}}" in prompt_template:
         return prompt_template
+    # create the wrapped template
     prompt_template = f"""
 The following tool was called:
 {tool_name}
@@ -215,14 +328,27 @@ Instructions:
 """
     return prompt_template.strip()
 
-def default_tool_summary_prompt(
-    tool : Callable,
-    query_key : str = "user_query"
-) -> str:
+
+def default_tool_summary_prompt(tool: Callable, query_key: str = "user_query") -> str:
+    """
+    Creates a default prompt to summarize tool output to answer user query
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    query_key : str
+        key that has user query
+    Returns
+    -------
+    prompt : str
+        prompt template for answering using tool output
+    """
+    # get metadata and extract relevant fields
     metadata = get_tool_metadata(tool)
     tool_name = metadata.get("tool_name", tool.__name__)
     tool_doc = metadata.get("tool_doc", "No docstring provided")
     output_key = metadata.get("output_key", f"{tool_name}_output")
+    # create the prompt
     prompt = f"""
 A tool named {tool_name} was called.
 
@@ -248,69 +374,129 @@ Your answer should clearly address the user question and incorporate the tool ou
 
     return prompt.strip()
 
+
 def create_tool_analysis_node(
-    tool : Callable,
+    tool: Callable,
     response_fn: ResponseFn,
-    name : str,
-    next_node_name : str | None = None,
-    query_key : str = "user_query",
+    name: str,
+    next_node_name: str | None = None,
+    query_key: str = "user_query",
     prompt_template: str | None = None,
-    max_history_pairs : int = 10,
+    max_history_pairs: int = 10,
     temperature: float | None = None,
-    max_tokens : int | None = None,
-):
+    max_tokens: int | None = None,
+) -> FunctionalNode:
+    f"""
+    Create an LLM node to answer user query using the output from a tool
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    response_fn : ResponseFn
+        response function for the LLM
+    name : str
+        name to be given to the node
+    next_node_name : Optional[str]
+        name for next node
+    query_key : str
+        key that has user query
+    prompt_template : Optional[str]
+        when given, template to be used to create answer to user query
+    max_history_pairs : int
+        number of pairs of responses to keep in history
+    temperature : Optional[float]
+        temperature to use for the LLM
+    max_tokens : Optional[int]
+        limit of tokens for LLM to use
+    Returns
+    -------
+    node : FunctionalNode
+        node to answer query with tool output
+    """
+    # get template that includes tool output. Default if none given, otherwise wrapped
     if prompt_template is None:
         prompt_template = default_tool_summary_prompt(tool=tool, query_key=query_key)
     else:
-        prompt_template = wrap_tool_output(
-            tool=tool,
-            prompt_template=prompt_template
-        )
+        prompt_template = wrap_tool_output(tool=tool, prompt_template=prompt_template)
     node = create_llm_node(
-        response_fn = response_fn,
+        response_fn=response_fn,
         name=name,
         prompt_template=prompt_template,
         query_key=query_key,
         next_node_name=next_node_name,
         max_history_pairs=max_history_pairs,
         temperature=temperature,
-        max_tokens=max_tokens
+        max_tokens=max_tokens,
     )
     return node
 
-def create_retry_conditional(
-    llm_analysis_node: FunctionalNode,
-    retry_llm_node : FunctionalNode,
-    retry_tool_node : FunctionalNode,
-    tool_output_key : str,
-)-> Callable:
-    analysis_name = llm_analysis_node.name
+
+def create_retry_llm_conditional(
+    tool_node: FunctionalNode,
+    retry_llm_node: FunctionalNode,
+) -> Callable[[dict[str, Any], str]]:
+    """
+    create conditional function to check for parse error
+    and point to retry for parse error node if there was error
+    otherwise point to the tool calling node
+    Parameters
+    ----------
+    tool_node : FunctionalNode
+        node where the tool is called
+    retry_llm_node: FunctionalNode
+        node that has retry for parse errors
+    Returns
+    -------
+    conditional_retry : Callable[[dict[str, Any], str]]
+        condtional function to direct where to go
+    """
+    tool_name = tool_node.name
     retry_llm_name = retry_llm_node.name
-    retry_tool_name = retry_tool_node.name
-    success_key = f"{tool_output_key}_success"
     def conditional_retry(state: dict) -> str:
         if state.get("parse_error", False):
             return retry_llm_name
-        if not state.get(success_key, True):
-            return retry_tool_name
-        return analysis_name
-    
+        return tool_name
+
     return conditional_retry
+
 
 def retry_llm_prompt(
     tool: Callable,
     state: dict[str, Any],
     prompt_template: str | None = None,
-    query_key:str = "user_query",
-    ):
+    query_key: str = "user_query",
+) -> str:
+    """
+    Create prompt for retrying creating tool arguments
+    when there was a parsing error
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    state: dict[str, Any],
+        the state dict
+    prompt_template : Optional[str]
+        when given, the base prompt
+    query_key : str
+        name of key with user query
+    Returns
+    -------
+    retry_prompt : str
+        prompt with information about parsing error to retry
+        getting proper JSON
+    """
+    # get tool metadata and extract relevant fields
     metadata = get_tool_metadata(tool)
     tool_name = metadata.get("tool_name", tool.__name__)
     parse_error = state["parse_error_message"]
     raw_output = state["raw_output"]
+    # get base prompt. When none given, it's the default tool prompt
+    # when given we wrap in the tool prompt
     if prompt_template is None:
         base_prompt = default_tool_prompt(tool=tool, query_key=query_key)
     else:
         base_prompt = wrap_tool_prompt(tool=tool, prompt_template=prompt_template)
+    # create prompt with injected error information
     retry_prompt = f"""
 The previous attempt to create tool arguments for {tool_name} failed to parse as JSON
 
@@ -329,19 +515,39 @@ Please correct the errors to proper JSON for the tool call
 def retry_tool_call_prompt(
     tool: Callable,
     state: dict[str, Any],
-    prompt_template : str | None = None,
-    query_key : str = "user_query",
-):
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+) -> str:
+    """
+    create prompt to retry getting tool arguments when tool call failed
+    Parameters
+    ---------
+    tool : Callable
+        tool being used
+    state : dict[str, Any]
+        state dict
+    prompt_template : Optional[str]
+        When given base prompt template
+    query_key : str
+        key with user query
+    Returns
+    -------
+    retry_prompt : str
+        prompt to retry getting tool arguments with information injected
+    """
+    # get tool metadata and extract relevant fields
     metadata = get_tool_metadata(tool)
     tool_name = metadata.get("tool_name", tool.__name__)
     output_key = metadata.get("output_key", "tool_output")
     args_key = f"{output_key}_args"
     tool_error = state.get(output_key, "Unknown error")
     tool_args = state.get(args_key, {})
+    # get default tool prompt or wrapped prompt_template as base prompt
     if prompt_template is None:
         base_prompt = default_tool_prompt(tool=tool, query_key=query_key)
     else:
         base_prompt = wrap_tool_prompt(tool=tool, prompt_template=prompt_template)
+    # inject information about the failure into the prompt.
     retry_prompt = f"""
 The attempt to call tool {tool_name} failed. 
 
@@ -362,6 +568,22 @@ def create_retry_llm_prompt_func(
     prompt_template: str | None = None,
     query_key: str = "user_query",
 ) -> Callable[[dict[str,Any]], str]:
+    """
+    create callable prompt function that only uses state
+    by using closure with retry_llm_prompt
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    prompt_template : Optional[str]
+        when given, base prompt template
+    query_key : str
+        key for user query
+    Returns
+    -------
+    _call : Callable[[dict[str,Any]], str]
+        function that can be used in LLMCall to help generate a prompt
+    """
     def _call(state: dict[str, Any]) -> str:
         return retry_llm_prompt(
             tool=tool,
@@ -379,7 +601,35 @@ def create_retry_llm_node(
     query_key : str = "user_query",
     next_node_name : str | None = None,
     max_history_pairs: int = 10,
+    temperature : float = 0.1,
 ) -> FunctionalNode:
+    """
+    Create a node that will attempt to fix a parse error from
+    a previous attempt to generate tool arguments
+    Parameters
+    ----------
+    tool : Callable 
+        tool being used
+    response_fn : ResponseFn
+        response function for the LLM
+    name : str
+        name of the node
+    prompt_template : Optiona[str]
+        when provided, base prompt template
+    query_key : str
+        key that contains the user query
+    next_node_name : Optional[str]
+        name for next node
+    max_history_pairs : int
+        number of pairs of responses to keep in history
+    temperature : float
+        temperature used to generate the response (low is recommended here)
+    Returns
+    -------
+    FunctionalNode
+        node that will take parse error info and attempt to try building 
+        tool arguments again
+    """
     prompt_func = create_retry_llm_prompt_func(
         tool=tool,
         prompt_template=prompt_template,
@@ -392,5 +642,5 @@ def create_retry_llm_node(
         query_key=query_key,
         next_node_name=next_node_name,
         max_history_pairs=max_history_pairs,
-        temperature=0.1
+        temperature=temperature
     )

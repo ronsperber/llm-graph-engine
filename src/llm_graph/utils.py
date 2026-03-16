@@ -25,7 +25,7 @@ def json_parse(s: str):
             keys
     """
     try:
-        parsed = json.loads(s) 
+        parsed = json.loads(s)
         if not isinstance(parsed, dict):
             raise TypeError(f"Expected JSON object (dict), got {type(parsed).__name__}")
         return {"parse_error": False} | parsed
@@ -34,15 +34,14 @@ def json_parse(s: str):
             "raw_output": s,
             "parse_error_message": f"{type(e).__name__: {e}}",
             "parse_error": True,
-            }
+        }
 
 
 class ResponseFn(Protocol):
     def __call__(
-        self,
-        messages: list[ChatCompletionMessageParam],
-        **kwargs: Any
+        self, messages: list[ChatCompletionMessageParam], **kwargs: Any
     ) -> dict[str, Any]: ...
+
 
 def tool_call(
     input_key: str, output_key: str, model: BaseModel | None = None
