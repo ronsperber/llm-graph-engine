@@ -4,7 +4,7 @@ is callable to be used in a FunctionalNode to communicate
 with an LLM
 """
 
-from typing import Any
+from typing import Any, Callable
 from llm_graph.utils import ResponseFn, json_parse
 
 
@@ -17,7 +17,7 @@ class LLMCall:
     def __init__(
         self,
         response_fn: ResponseFn,
-        prompt_template: str | None = None,
+        prompt_template: str | Callable[[dict(str,Any)],str] |None = None,
         max_history_pairs: int = 10,
         query_key: str = "user_query",
         temperature : float | None = None,
@@ -86,7 +86,8 @@ class LLMCall:
 
     def _build_prompt(self, state: dict[str, Any]) -> str:
         # if there is a prompt_template, use the state to populate fields
-        if self.prompt_template:
+        template = self.prompt_template(state) if callable(self.prompt_template) else self.prompt_template
+        if template:
             try:
                 return self.prompt_template.format(**state)
             except KeyError as e:
