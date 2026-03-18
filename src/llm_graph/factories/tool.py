@@ -100,7 +100,7 @@ def wrap_tool_prompt(tool: NodeFunc, prompt_template: str) -> str:
     -------
     tool_wrapper : str
         original template wrapped with additional information
-    
+
     """
     # get the metadata for the tool and extract information to add
     # to the prompt
@@ -152,14 +152,14 @@ def create_tool_llm_node(
     prompt_template: str | None = None,
     query_key: str = "user_query",
     max_history_pairs: int = 10,
-    temperature = 0.1,
+    temperature=0.1,
 ) -> FunctionalNode:
     """
     Create a node that will use an LLM response function to get the arguments
     for the tool
     Parameters
     ----------
-    tool:Callable 
+    tool:Callable
         the tool for which arguments are needed
     response_fn : ResponseFn
         function used to send data to an LLM
@@ -175,7 +175,7 @@ def create_tool_llm_node(
         maximum number of pairs of query/response to keep in the history
     temperature : float
         temperature to use for LLM to create query (low is recommended here)
-    
+
     Returns
     -------
     FunctionaNode:
@@ -202,10 +202,8 @@ def create_tool_llm_node(
 
 
 def create_tool_node(
-    tool: NodeFunc,
-    name: str,
-    next_node_name: str | None = None
-    ) -> FunctionalNode:
+    tool: NodeFunc, name: str, next_node_name: str | None = None
+) -> FunctionalNode:
     """
     Create a node that uses a given tool as its function
     Parameters
@@ -452,6 +450,7 @@ def create_retry_llm_conditional(
     """
     tool_name = tool_node.name
     retry_llm_name = retry_llm_node.name
+
     def conditional_retry(state: dict) -> str:
         if state.get("parse_error", False):
             return retry_llm_name
@@ -563,11 +562,12 @@ Please adjust the arguments to that the tool can be called successfully.
 """
     return retry_prompt
 
+
 def create_retry_llm_prompt_func(
     tool: NodeFunc,
     prompt_template: str | None = None,
     query_key: str = "user_query",
-) -> Callable[[dict[str,Any]], str]:
+) -> Callable[[dict[str, Any]], str]:
     """
     create callable prompt function that only uses state
     by using closure with retry_llm_prompt
@@ -584,31 +584,31 @@ def create_retry_llm_prompt_func(
     _call : Callable[[dict[str,Any]], str]
         function that can be used in LLMCall to help generate a prompt
     """
+
     def _call(state: dict[str, Any]) -> str:
         return retry_llm_prompt(
-            tool=tool,
-            state=state,
-            prompt_template=prompt_template,
-            query_key=query_key
+            tool=tool, state=state, prompt_template=prompt_template, query_key=query_key
         )
+
     return _call
+
 
 def create_retry_llm_node(
     tool: NodeFunc,
     response_fn: ResponseFn,
-    name : str,
-    prompt_template : str | None = None,
-    query_key : str = "user_query",
-    next_node_name : str | None = None,
+    name: str,
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+    next_node_name: str | None = None,
     max_history_pairs: int = 10,
-    temperature : float = 0.1,
+    temperature: float = 0.1,
 ) -> FunctionalNode:
     """
     Create a node that will attempt to fix a parse error from
     a previous attempt to generate tool arguments
     Parameters
     ----------
-    tool : NodeFunc 
+    tool : NodeFunc
         tool being used
     response_fn : ResponseFn
         response function for the LLM
@@ -627,13 +627,11 @@ def create_retry_llm_node(
     Returns
     -------
     FunctionalNode
-        node that will take parse error info and attempt to try building 
+        node that will take parse error info and attempt to try building
         tool arguments again
     """
     prompt_func = create_retry_llm_prompt_func(
-        tool=tool,
-        prompt_template=prompt_template,
-        query_key=query_key
+        tool=tool, prompt_template=prompt_template, query_key=query_key
     )
     return create_llm_node(
         response_fn=response_fn,
@@ -642,13 +640,14 @@ def create_retry_llm_node(
         query_key=query_key,
         next_node_name=next_node_name,
         max_history_pairs=max_history_pairs,
-        temperature=temperature
+        temperature=temperature,
     )
+
 
 def create_conditional_parse_retry_node(
     tool_node: FunctionalNode,
     retry_llm_node: FunctionalNode,
-    name : str,
+    name: str,
 ) -> ConditionalNode:
     """
     Create conditional node to either move on to tool node
@@ -670,10 +669,8 @@ def create_conditional_parse_retry_node(
         tool_node=tool_node,
         retry_llm_node=retry_llm_node,
     )
-    return ConditionalNode(
-        name=name,
-        condition_fn=conditional_func
-    )
+    return ConditionalNode(name=name, condition_fn=conditional_func)
+
 
 def create_retry_parse_error_pair(
     tool: NodeFunc,
@@ -730,17 +727,16 @@ def create_retry_parse_error_pair(
     )
 
     conditional_node = create_conditional_parse_retry_node(
-        tool_node=tool_node,
-        retry_llm_node=retry_node,
-        name=conditional_node_name
+        tool_node=tool_node, retry_llm_node=retry_node, name=conditional_node_name
     )
     return conditional_node, retry_node
+
 
 def create_retry_tool_prompt_func(
     tool: NodeFunc,
     prompt_template: str | None = None,
     query_key: str = "user_query",
-) -> Callable[[dict[str,Any]], str]:
+) -> Callable[[dict[str, Any]], str]:
     """
     create callable prompt function that only uses state
     by using closure with retry_llm_prompt
@@ -757,24 +753,24 @@ def create_retry_tool_prompt_func(
     _call : Callable[[dict[str,Any]], str]
         function that can be used in LLMCall to help generate a prompt
     """
+
     def _call(state: dict[str, Any]) -> str:
         return retry_tool_call_prompt(
-            tool=tool,
-            state=state,
-            prompt_template=prompt_template,
-            query_key=query_key
+            tool=tool, state=state, prompt_template=prompt_template, query_key=query_key
         )
+
     return _call
+
 
 def create_retry_tool_error_node(
     tool: NodeFunc,
     response_fn: ResponseFn,
-    name : str,
-    prompt_template : str | None = None,
-    query_key : str = "user_query",
-    next_node_name : str | None = None,
+    name: str,
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+    next_node_name: str | None = None,
     max_history_pairs: int = 10,
-    temperature : float = 0.1,
+    temperature: float = 0.1,
 ) -> FunctionalNode:
     """
     Creates a node to retry LLM call after tool call failure
@@ -799,13 +795,11 @@ def create_retry_tool_error_node(
     Returns
     -------
     retry_node : FunctionalNode
-        node that will incorporate tool errors into prompt to attempt retry 
+        node that will incorporate tool errors into prompt to attempt retry
         to get tool arguments
     """
     prompt_func = create_retry_tool_prompt_func(
-        tool=tool,
-        prompt_template=prompt_template,
-        query_key=query_key
+        tool=tool, prompt_template=prompt_template, query_key=query_key
     )
     retry_node = create_llm_node(
         response_fn=response_fn,
@@ -818,6 +812,7 @@ def create_retry_tool_error_node(
     )
 
     return retry_node
+
 
 def create_retry_tool_conditional(
     tool_analysis_node: FunctionalNode,
@@ -844,17 +839,20 @@ def create_retry_tool_conditional(
     tool_analysis_name = tool_analysis_node.name
     retry_tool_name = retry_tool_node.name
     success_key = f"{output_key}_success"
+
     def conditional_retry(state: dict) -> str:
         if not state.get(success_key, False):
             return retry_tool_name
         return tool_analysis_name
+
     return conditional_retry
 
+
 def create_conditional_tool_retry_node(
-    tool : NodeFunc,
-    tool_analysis_node : FunctionalNode,
-    retry_tool_node : FunctionalNode,
-    name : str,
+    tool: NodeFunc,
+    tool_analysis_node: FunctionalNode,
+    retry_tool_node: FunctionalNode,
+    name: str,
 ) -> ConditionalNode:
     """
     creates conditional node to determine wither to go to the retry tool node
@@ -872,7 +870,7 @@ def create_conditional_tool_retry_node(
     Returns
     -------
     ConditionalNode
-        either goes to tool call or to node to retry with tool 
+        either goes to tool call or to node to retry with tool
         error information
     """
     metadata = get_tool_metadata(tool)
@@ -880,26 +878,24 @@ def create_conditional_tool_retry_node(
     conditional_func = create_retry_tool_conditional(
         tool_analysis_node=tool_analysis_node,
         retry_tool_node=retry_tool_node,
-        output_key=output_key
+        output_key=output_key,
     )
 
-    return ConditionalNode(
-        name=name,
-        condition_fn=conditional_func
-    )
+    return ConditionalNode(name=name, condition_fn=conditional_func)
+
 
 def create_retry_tool_error_pair(
     tool: NodeFunc,
     response_fn: ResponseFn,
-    tool_node : FunctionalNode,
-    retry_tool_name : str,
-    check_tool_name : str,
-    check_parse_name : str,
-    prompt_template : str | None = None,
+    tool_node: FunctionalNode,
+    retry_tool_name: str,
+    check_tool_name: str,
+    check_parse_name: str,
+    prompt_template: str | None = None,
     query_key: str = "user_query",
     max_history_pairs: int = 10,
     temperature: float = 0.1,
-    ):
+):
 
     retry_tool_node = create_retry_tool_error_node(
         tool=tool,

@@ -72,7 +72,7 @@ class GraphRunner:
         self.max_node_visits = max_node_visits
         self.on_max_visits = on_max_visits
 
-    def execute(self, input: dict, reset_trace: bool = True)->dict[str, Any]:
+    def execute(self, input: dict, reset_trace: bool = True) -> dict[str, Any]:
         """
         main execution path for a graph
         Parameters

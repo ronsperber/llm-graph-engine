@@ -5,7 +5,8 @@ module with node classes used
 from typing import Callable, Any
 import copy
 
-NodeFunc = Callable[[dict[str,Any]], dict[str,Any]]
+NodeFunc = Callable[[dict[str, Any]], dict[str, Any]]
+
 
 class GraphNode:
     """
