@@ -1,17 +1,17 @@
 from inspect import signature
 from typing import Callable, Any
-from llm_graph.core.nodes import FunctionalNode, ConditionalNode
+from llm_graph.core.nodes import FunctionalNode, ConditionalNode, NodeFunc
 from .llm import create_llm_node
 from llm_graph.utils import ResponseFn
 
 
-def get_tool_metadata(tool: Callable) -> dict[str, Any]:
+def get_tool_metadata(tool: NodeFunc) -> dict[str, Any]:
     """
     gets metadata from tool. If tool was not created with tool_meta
     attribute, reconstruct the metadata from tool itself
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool to extract metadata from
     Returns
     -------
@@ -38,12 +38,12 @@ def get_tool_metadata(tool: Callable) -> dict[str, Any]:
     }
 
 
-def default_tool_prompt(tool: Callable, query_key: str = "user_query") -> str:
+def default_tool_prompt(tool: NodeFunc, query_key: str = "user_query") -> str:
     """
     Generates a default prompt for calling a tool via LLM.
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool to make default prompt for
     query_key : str
         name of key that has user query
@@ -85,20 +85,20 @@ The user query is: {{{query_key}}}
     return prompt.strip()
 
 
-def wrap_tool_prompt(tool: Callable, prompt_template: str) -> str:
+def wrap_tool_prompt(tool: NodeFunc, prompt_template: str) -> str:
     """
     Take an existing prompt template to get arguments for a tool
     and create a wrapped version of it with additional information from
     the tool.
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         the tool that the prompt is for
     prompt_template : str
         the original prompt template
     Returns
     -------
-    tool_wrapper: str
+    tool_wrapper : str
         original template wrapped with additional information
     
     """
@@ -145,7 +145,7 @@ The output should be a JSON that looks as follows, making sure typing is correct
 
 
 def create_tool_llm_node(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     name: str,
     next_node_name: str | None = None,
@@ -202,7 +202,7 @@ def create_tool_llm_node(
 
 
 def create_tool_node(
-    tool: Callable,
+    tool: NodeFunc,
     name: str,
     next_node_name: str | None = None
     ) -> FunctionalNode:
@@ -210,7 +210,7 @@ def create_tool_node(
     Create a node that uses a given tool as its function
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool to be executed
     name: str
         name of the node
@@ -229,7 +229,7 @@ def create_tool_node(
 
 
 def create_tool_llm_pair(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     llm_node_name: str,
     tool_node_name: str,
@@ -244,7 +244,7 @@ def create_tool_llm_pair(
     to create the argument key, the other to execute the tool
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     response_fn : ResponseFn
         response function for the LLM node
@@ -283,7 +283,7 @@ def create_tool_llm_pair(
 
 
 def wrap_tool_output(
-    tool: Callable,
+    tool: NodeFunc,
     prompt_template: str,
 ) -> str:
     """
@@ -291,7 +291,7 @@ def wrap_tool_output(
     to help an LLM analyze the output
     Parameters
     ----------
-    tool : Callable:
+    tool : NodeFunc:
         tool being used
     prompt_template: str
         initial prompt_template
@@ -329,12 +329,12 @@ Instructions:
     return prompt_template.strip()
 
 
-def default_tool_summary_prompt(tool: Callable, query_key: str = "user_query") -> str:
+def default_tool_summary_prompt(tool: NodeFunc, query_key: str = "user_query") -> str:
     """
     Creates a default prompt to summarize tool output to answer user query
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     query_key : str
         key that has user query
@@ -376,7 +376,7 @@ Your answer should clearly address the user question and incorporate the tool ou
 
 
 def create_tool_analysis_node(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     name: str,
     next_node_name: str | None = None,
@@ -390,7 +390,7 @@ def create_tool_analysis_node(
     Create an LLM node to answer user query using the output from a tool
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     response_fn : ResponseFn
         response function for the LLM
@@ -461,7 +461,7 @@ def create_retry_llm_conditional(
 
 
 def retry_llm_prompt(
-    tool: Callable,
+    tool: NodeFunc,
     state: dict[str, Any],
     prompt_template: str | None = None,
     query_key: str = "user_query",
@@ -471,7 +471,7 @@ def retry_llm_prompt(
     when there was a parsing error
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     state: dict[str, Any],
         the state dict
@@ -513,7 +513,7 @@ Please correct the errors to proper JSON for the tool call
 
 
 def retry_tool_call_prompt(
-    tool: Callable,
+    tool: NodeFunc,
     state: dict[str, Any],
     prompt_template: str | None = None,
     query_key: str = "user_query",
@@ -522,7 +522,7 @@ def retry_tool_call_prompt(
     create prompt to retry getting tool arguments when tool call failed
     Parameters
     ---------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     state : dict[str, Any]
         state dict
@@ -564,7 +564,7 @@ Please adjust the arguments to that the tool can be called successfully.
     return retry_prompt
 
 def create_retry_llm_prompt_func(
-    tool: Callable,
+    tool: NodeFunc,
     prompt_template: str | None = None,
     query_key: str = "user_query",
 ) -> Callable[[dict[str,Any]], str]:
@@ -573,7 +573,7 @@ def create_retry_llm_prompt_func(
     by using closure with retry_llm_prompt
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     prompt_template : Optional[str]
         when given, base prompt template
@@ -594,7 +594,7 @@ def create_retry_llm_prompt_func(
     return _call
 
 def create_retry_llm_node(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     name : str,
     prompt_template : str | None = None,
@@ -608,7 +608,7 @@ def create_retry_llm_node(
     a previous attempt to generate tool arguments
     Parameters
     ----------
-    tool : Callable 
+    tool : NodeFunc 
         tool being used
     response_fn : ResponseFn
         response function for the LLM
@@ -676,7 +676,7 @@ def create_conditional_parse_retry_node(
     )
 
 def create_retry_parse_error_pair(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     retry_node_name: str,
     conditional_node_name: str,
@@ -692,7 +692,7 @@ def create_retry_parse_error_pair(
     to fix parsing errors
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     response_fn : ResponseFn
         response function to use for the LLM
@@ -737,7 +737,7 @@ def create_retry_parse_error_pair(
     return conditional_node, retry_node
 
 def create_retry_tool_prompt_func(
-    tool: Callable,
+    tool: NodeFunc,
     prompt_template: str | None = None,
     query_key: str = "user_query",
 ) -> Callable[[dict[str,Any]], str]:
@@ -746,7 +746,7 @@ def create_retry_tool_prompt_func(
     by using closure with retry_llm_prompt
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     prompt_template : Optional[str]
         when given, base prompt template
@@ -767,7 +767,7 @@ def create_retry_tool_prompt_func(
     return _call
 
 def create_retry_tool_error_node(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     name : str,
     prompt_template : str | None = None,
@@ -780,7 +780,7 @@ def create_retry_tool_error_node(
     Creates a node to retry LLM call after tool call failure
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     response_fn : ResponseFn
         response function to use in the LLM
@@ -851,7 +851,7 @@ def create_retry_tool_conditional(
     return conditional_retry
 
 def create_conditional_tool_retry_node(
-    tool : Callable,
+    tool : NodeFunc,
     tool_analysis_node : FunctionalNode,
     retry_tool_node : FunctionalNode,
     name : str,
@@ -861,7 +861,7 @@ def create_conditional_tool_retry_node(
     or to the tool analysis node
     Parameters
     ----------
-    tool : Callable
+    tool : NodeFunc
         tool being used
     tool_analysis_node : FunctionalNode,
         node with the tool analysis
@@ -889,7 +889,7 @@ def create_conditional_tool_retry_node(
     )
 
 def create_retry_tool_error_pair(
-    tool: Callable,
+    tool: NodeFunc,
     response_fn: ResponseFn,
     tool_node : FunctionalNode,
     retry_tool_name : str,

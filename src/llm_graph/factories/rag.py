@@ -69,7 +69,7 @@ def create_rag_llm_node(
 def create_rag_query_pair(
     path: str,
     collection_name: str,
-    response_fn: Callable[[list], dict[str, Any]],
+    response_fn: ResponseFn,
     llm_node_name: str,
     retrieval_node_name: str = "retrieval",
     llm_next_node_name: str | None = None,

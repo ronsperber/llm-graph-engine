@@ -5,6 +5,7 @@ module with node classes used
 from typing import Callable, Any
 import copy
 
+NodeFunc = Callable[[dict[str,Any]], dict[str,Any]]
 
 class GraphNode:
     """
@@ -51,7 +52,7 @@ class FunctionalNode(GraphNode):
     node that applies a function to the state
     """
 
-    def __init__(self, func: Callable, name: str, next_node_name: str | None = None):
+    def __init__(self, func: NodeFunc, name: str, next_node_name: str | None = None):
         """
         Parameters
         ----------
