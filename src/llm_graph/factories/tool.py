@@ -358,7 +358,7 @@ Tool description:
 The tool returned the following output:
 {{{output_key}}}
 
-Use this output to answer the user's quertion.
+Use this output to answer the user's question.
 
 The question is :
 {{{query_key}}} 
@@ -434,7 +434,7 @@ def create_tool_analysis_node(
 def create_retry_llm_conditional(
     tool_node: FunctionalNode,
     retry_llm_node: FunctionalNode,
-) -> Callable[[dict[str, Any], str]]:
+) -> Callable[[dict[str, Any]], str]:
     """
     create conditional function to check for parse error
     and point to retry for parse error node if there was error
@@ -823,7 +823,7 @@ def create_retry_tool_conditional(
     tool_analysis_node: FunctionalNode,
     retry_tool_node: FunctionalNode,
     output_key: str,
-) -> Callable[[dict[str, Any], str]]:
+) -> Callable[[dict[str, Any]], str]:
     """
     create conditional function to check for tool error
     and point to retry for tool error node if there was error
