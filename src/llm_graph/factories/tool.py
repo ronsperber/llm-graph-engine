@@ -1,6 +1,7 @@
 from inspect import signature
 from typing import Callable, Any
-from llm_graph.core.nodes import FunctionalNode
+from llm_graph.core.nodes import FunctionalNode, ConditionalNode
+
 from .llm import create_llm_node
 from llm_graph.utils import ResponseFn
 
@@ -644,3 +645,105 @@ def create_retry_llm_node(
         max_history_pairs=max_history_pairs,
         temperature=temperature
     )
+
+### TO-DO:
+
+###  2) Repeat the process above for retries for tool failure
+###     a) conditional node
+###     b) prompt functions
+###     c) create node
+###  3) Create something that creates all the necessary nodes with correct flow
+###  4) Check for which modules still lack documentation
+
+def create_conditional_parse_retry_node(
+    tool_node: FunctionalNode,
+    retry_llm_node: FunctionalNode,
+    name : str,
+) -> ConditionalNode:
+    """
+    Create conditional node to either move on to tool node
+    or go to node to retry after parse error
+    Parameters
+    ----------
+    tool_node : FunctionalNode
+        Node to call the tool if parsing is successful
+    retry_llm_node: FunctionalNode
+        node to retry LLM call if there was a parse error
+    name : str
+        name for conditional node
+    Returns
+    -------
+    ConditionalNode
+        node to direct where to go next depending on parse error
+    """
+    conditional_func = create_retry_llm_conditional(
+        tool_node=tool_node,
+        retry_llm_node=retry_llm_node,
+    )
+    return ConditionalNode(
+        name=name,
+        condition_fn=conditional_func
+    )
+
+def create_retry_parse_error_pair(
+    tool: Callable,
+    response_fn: ResponseFn,
+    retry_node_name: str,
+    conditional_node_name: str,
+    tool_node: FunctionalNode,
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+    max_history_pairs: int = 10,
+    temperature: float = 0.1,
+):
+    f"""
+    create a pair of nodes to deal with parse errors
+    One ConditionalNode to route afterwards, one to attempt
+    to fix parsing errors
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    response_fn : ResponseFn
+        response function to use for the LLM
+    retry_node_name : str
+        name to use for the retry node
+    conditional_node_name : str
+        name to use for the conditional node
+    tool_node : FunctionalNode
+        node that has the tool in it
+    prompt_template : Optional[str]
+        optional prompt template to use for the retry LLM node
+    query_key: str
+        key that holds the user query
+    max_history_pairs : int
+        number of pairs to keep in message history in LLM node
+    temperature: float
+        temperature parameter to use for LLM
+    Returns
+    -------
+    tuple[ConditionalNode, FunctionalNode]
+        the conditional node and functional node pair
+    """
+    # create the retry node. After it generates a new response
+    # it will go to the conditional node. This will loop until
+    # the LLM produces output that can be parsed as JSON
+    retry_node = create_retry_llm_node(
+        tool=tool,
+        response_fn=response_fn,
+        name=retry_node_name,
+        prompt_template=prompt_template,
+        query_key=query_key,
+        next_node_name=conditional_node_name,
+        max_history_pairs=max_history_pairs,
+        temperature=temperature,
+    )
+
+    conditional_node = create_conditional_parse_retry_node(
+        tool_node=tool_node,
+        retry_llm_node=retry_node,
+        name=conditional_node_name
+    )
+
+    return conditional_node, retry_node
+
