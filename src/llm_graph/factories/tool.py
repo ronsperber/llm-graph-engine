@@ -1,7 +1,6 @@
 from inspect import signature
 from typing import Callable, Any
 from llm_graph.core.nodes import FunctionalNode, ConditionalNode
-
 from .llm import create_llm_node
 from llm_graph.utils import ResponseFn
 
@@ -646,15 +645,6 @@ def create_retry_llm_node(
         temperature=temperature
     )
 
-### TO-DO:
-
-###  2) Repeat the process above for retries for tool failure
-###     a) conditional node
-###     b) prompt functions
-###     c) create node
-###  3) Create something that creates all the necessary nodes with correct flow
-###  4) Check for which modules still lack documentation
-
 def create_conditional_parse_retry_node(
     tool_node: FunctionalNode,
     retry_llm_node: FunctionalNode,
@@ -744,6 +734,189 @@ def create_retry_parse_error_pair(
         retry_llm_node=retry_node,
         name=conditional_node_name
     )
-
     return conditional_node, retry_node
 
+def create_retry_tool_prompt_func(
+    tool: Callable,
+    prompt_template: str | None = None,
+    query_key: str = "user_query",
+) -> Callable[[dict[str,Any]], str]:
+    """
+    create callable prompt function that only uses state
+    by using closure with retry_llm_prompt
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    prompt_template : Optional[str]
+        when given, base prompt template
+    query_key : str
+        key for user query
+    Returns
+    -------
+    _call : Callable[[dict[str,Any]], str]
+        function that can be used in LLMCall to help generate a prompt
+    """
+    def _call(state: dict[str, Any]) -> str:
+        return retry_tool_call_prompt(
+            tool=tool,
+            state=state,
+            prompt_template=prompt_template,
+            query_key=query_key
+        )
+    return _call
+
+def create_retry_tool_error_node(
+    tool: Callable,
+    response_fn: ResponseFn,
+    name : str,
+    prompt_template : str | None = None,
+    query_key : str = "user_query",
+    next_node_name : str | None = None,
+    max_history_pairs: int = 10,
+    temperature : float = 0.1,
+) -> FunctionalNode:
+    """
+    Creates a node to retry LLM call after tool call failure
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    response_fn : ResponseFn
+        response function to use in the LLM
+    name : str
+        name of this node
+    prompt_template: Optional[str]
+        base prompt template for the tool call
+    query_key : str
+        key for the user query
+    next_node_name : Optional[str]
+        name of next node
+    max_history_pairs : int
+        number of pairs of query/response to keep
+    temperature: float
+        temperature to use for the LLM (recommended to be low here)
+    Returns
+    -------
+    retry_node : FunctionalNode
+        node that will incorporate tool errors into prompt to attempt retry 
+        to get tool arguments
+    """
+    prompt_func = create_retry_tool_prompt_func(
+        tool=tool,
+        prompt_template=prompt_template,
+        query_key=query_key
+    )
+    retry_node = create_llm_node(
+        response_fn=response_fn,
+        name=name,
+        prompt_template=prompt_func,
+        query_key=query_key,
+        next_node_name=next_node_name,
+        max_history_pairs=max_history_pairs,
+        temperature=temperature,
+    )
+
+    return retry_node
+
+def create_retry_tool_conditional(
+    tool_analysis_node: FunctionalNode,
+    retry_tool_node: FunctionalNode,
+    output_key: str,
+) -> Callable[[dict[str, Any], str]]:
+    """
+    create conditional function to check for tool error
+    and point to retry for tool error node if there was error
+    otherwise point to the tool calling node
+    Parameters
+    ----------
+    tool_node : FunctionalNode
+        node where the tool is called
+    retry_tool_node: FunctionalNode
+        node that has retry for tool call errors
+    output_key : str
+        key that has output from the tool
+    Returns
+    -------
+    conditional_retry : Callable[[dict[str, Any], str]]
+        condtional function to direct where to go
+    """
+    tool_analysis_name = tool_analysis_node.name
+    retry_tool_name = retry_tool_node.name
+    success_key = f"{output_key}_success"
+    def conditional_retry(state: dict) -> str:
+        if state.get(success_key, False):
+            return retry_tool_name
+        return tool_analysis_name
+    return conditional_retry
+
+def create_conditional_tool_retry_node(
+    tool : Callable,
+    tool_node : FunctionalNode,
+    retry_tool_node : FunctionalNode,
+    name : str,
+) -> ConditionalNode:
+    """
+    creates conditional node to determine wither to go to the retry tool node
+    or to the tool node
+    Parameters
+    ----------
+    tool : Callable
+        tool being used
+    tool_node : FunctionalNode,
+        node with the tool call
+    retry_tool_node : FunctionalNode
+        node to retry after tool failure
+    name : str
+        name for the conditional node
+    Returns
+    -------
+    ConditionalNode
+        either goes to tool call or to node to retry with tool 
+        error information
+    """
+    metadata = get_tool_metadata(tool)
+    output_key = metadata.get("output_key", f"{tool.__name__}_output")
+    conditional_func = create_retry_tool_conditional(
+        tool_node=tool_node,
+        retry_tool_node=retry_tool_node,
+        output_key=output_key
+    )
+
+    return ConditionalNode(
+        name=name,
+        condition_fn=conditional_func
+    )
+
+def create_retry_tool_error_pair(
+    tool: Callable,
+    response_fn: ResponseFn,
+    tool_node : FunctionalNode,
+    retry_tool_name : str,
+    check_tool_name : str,
+    check_parse_name : str,
+    prompt_template : str | None = None,
+    query_key: str = "user_query",
+    max_history_pairs: int = 10,
+    temperature: float = 0.1,
+    ):
+
+    retry_tool_node = create_retry_tool_error_node(
+        tool=tool,
+        response_fn=response_fn,
+        name=retry_tool_name,
+        prompt_template=prompt_template,
+        query_key=query_key,
+        next_node_name=check_parse_name,
+        max_history_pairs=max_history_pairs,
+        temperature=temperature,
+    )
+
+    conditional_tool_retry_node = create_conditional_tool_retry_node(
+        tool=tool,
+        tool_node=tool_node,
+        retry_tool_node=retry_tool_node,
+        name=check_tool_name,
+    )
+
+    return conditional_tool_retry_node, retry_tool_node
