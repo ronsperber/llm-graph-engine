@@ -26,15 +26,13 @@ def json_parse(s: str) -> dict[str, Any]:
     """
     try:
         parsed = json.loads(s)
-        if not isinstance(parsed, dict):
-            raise TypeError(f"Expected JSON object (dict), got {type(parsed).__name__}")
-        return {"parse_error": False} | parsed
     except Exception as e:
         return {
             "raw_output": s,
-            "parse_error_message": f"{type(e).__name__: {e}}",
+            "parse_error_message": f"{type(e).__name__}: {e}",
             "parse_error": True,
         }
+    return {"parse_error": False} | parsed
 
 
 class ResponseFn(Protocol):

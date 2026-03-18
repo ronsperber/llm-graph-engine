@@ -827,11 +827,11 @@ def create_retry_tool_conditional(
     """
     create conditional function to check for tool error
     and point to retry for tool error node if there was error
-    otherwise point to the tool calling node
+    otherwise point to the tool analysis node
     Parameters
     ----------
-    tool_node : FunctionalNode
-        node where the tool is called
+    tool_analysis_node : FunctionalNode
+        node where the tool analysis is
     retry_tool_node: FunctionalNode
         node that has retry for tool call errors
     output_key : str
@@ -839,32 +839,32 @@ def create_retry_tool_conditional(
     Returns
     -------
     conditional_retry : Callable[[dict[str, Any], str]]
-        condtional function to direct where to go
+        conditional function to direct where to go
     """
     tool_analysis_name = tool_analysis_node.name
     retry_tool_name = retry_tool_node.name
     success_key = f"{output_key}_success"
     def conditional_retry(state: dict) -> str:
-        if state.get(success_key, False):
+        if not state.get(success_key, False):
             return retry_tool_name
         return tool_analysis_name
     return conditional_retry
 
 def create_conditional_tool_retry_node(
     tool : Callable,
-    tool_node : FunctionalNode,
+    tool_analysis_node : FunctionalNode,
     retry_tool_node : FunctionalNode,
     name : str,
 ) -> ConditionalNode:
     """
     creates conditional node to determine wither to go to the retry tool node
-    or to the tool node
+    or to the tool analysis node
     Parameters
     ----------
     tool : Callable
         tool being used
-    tool_node : FunctionalNode,
-        node with the tool call
+    tool_analysis_node : FunctionalNode,
+        node with the tool analysis
     retry_tool_node : FunctionalNode
         node to retry after tool failure
     name : str
@@ -878,7 +878,7 @@ def create_conditional_tool_retry_node(
     metadata = get_tool_metadata(tool)
     output_key = metadata.get("output_key", f"{tool.__name__}_output")
     conditional_func = create_retry_tool_conditional(
-        tool_node=tool_node,
+        tool_analysis_node=tool_analysis_node,
         retry_tool_node=retry_tool_node,
         output_key=output_key
     )

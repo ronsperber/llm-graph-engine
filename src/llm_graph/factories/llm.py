@@ -33,7 +33,7 @@ The user query is:
 def create_llm_node(
     response_fn: ResponseFn,
     name: str,
-    prompt_template: PromptTemplate,
+    prompt_template: PromptTemplate = None,
     query_key: str = "user_query",
     next_node_name: str | None = None,
     max_history_pairs: int = 10,
