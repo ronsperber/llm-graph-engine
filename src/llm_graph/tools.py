@@ -1,12 +1,13 @@
 """
 module of common tools to use
 """
-from typing import Callable
+
 import chromadb
 from .utils import tool_call
+from llm_graph.core.nodes import NodeFunc
 
 
-def make_chroma_search_tool(path: str, collection_name: str) -> Callable:
+def make_chroma_search_tool(path: str, collection_name: str) -> NodeFunc:
     """
     Creates a tool to use ChromaDB to do a similarity search
     Parameters
@@ -17,7 +18,7 @@ def make_chroma_search_tool(path: str, collection_name: str) -> Callable:
         the name of the collection
     Returns
     -------
-    chroma_search_tool:
+    chroma_search_tool: NodeFunc
         callable that can be used in a FunctionalNode
     """
     # get a client up and connected to the vector db and the collection

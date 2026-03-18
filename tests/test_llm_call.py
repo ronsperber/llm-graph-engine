@@ -6,7 +6,7 @@ from llm_graph.llm.llm_call import LLMCall, json_parse
 def test_json_parse_valid_json():
     s = '{"a": 1, "b": "two"}'
     parsed = json_parse(s)
-    assert parsed == {"a": 1, "b": "two"}
+    assert parsed == {"a": 1, "b": "two", "parse_error": False}
 
 
 def test_json_parse_invalid_json_returns_fallback_dict():

@@ -19,7 +19,7 @@ class LLMCall:
     def __init__(
         self,
         response_fn: ResponseFn,
-        prompt_template: PromptTemplate,
+        prompt_template: PromptTemplate = None,
         max_history_pairs: int = 10,
         query_key: str = "user_query",
         temperature: float | None = None,
