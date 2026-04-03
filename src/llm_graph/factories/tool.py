@@ -887,7 +887,7 @@ def create_conditional_tool_retry_node(
 def create_retry_tool_error_pair(
     tool: NodeFunc,
     response_fn: ResponseFn,
-    tool_node: FunctionalNode,
+    tool_analysis_node: FunctionalNode,
     retry_tool_name: str,
     check_tool_name: str,
     check_parse_name: str,
@@ -910,7 +910,7 @@ def create_retry_tool_error_pair(
 
     conditional_tool_retry_node = create_conditional_tool_retry_node(
         tool=tool,
-        tool_node=tool_node,
+        tool_analysis_node=tool_analysis_node,
         retry_tool_node=retry_tool_node,
         name=check_tool_name,
     )
