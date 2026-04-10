@@ -459,42 +459,42 @@ class TestCreateToolLlmNode:
 class TestCreateToolLlmPair:
 
     def test_returns_two_functional_nodes(self):
-        llm_node, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             llm_node_name="gen_args",
             tool_node_name="run_tool",
         )
-        assert isinstance(llm_node, FunctionalNode)
-        assert isinstance(tool_node, FunctionalNode)
+        assert isinstance(nodes["gen_args"], FunctionalNode)
+        assert isinstance(nodes["run_tool"], FunctionalNode)
 
     def test_llm_node_points_to_tool_node(self):
-        llm_node, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             llm_node_name="gen_args",
             tool_node_name="run_tool",
         )
-        assert llm_node.next_node_name == "run_tool"
+        assert nodes["gen_args"].next_node_name == "run_tool"
 
     def test_tool_node_points_to_given_next(self):
-        _, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             llm_node_name="gen_args",
             tool_node_name="run_tool",
             tool_node_next_node_name="analysis",
         )
-        assert tool_node.next_node_name == "analysis"
+        assert nodes["run_tool"].next_node_name == "analysis"
 
     def test_tool_node_name_is_correct(self):
-        _, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             llm_node_name="gen_args",
             tool_node_name="run_tool",
         )
-        assert tool_node.name == "run_tool"
+        assert nodes["run_tool"].name == "run_tool"
 
 
 class TestCreateToolAnalysisNode:
@@ -604,13 +604,15 @@ class TestCreateRetryParseErrorPair:
 
     def setup_method(self):
         self.tool_node = create_tool_node(sqrt_tool, name="exec_tool")
-        self.cond_node, self.retry_node = create_retry_parse_error_pair(
+        nodes = create_retry_parse_error_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             retry_node_name="retry_parse",
             conditional_node_name="check_parse",
             tool_node=self.tool_node,
         )
+        self.cond_node = nodes["check_parse"]
+        self.retry_node = nodes["retry_parse"]
 
     def test_returns_conditional_node_first(self):
         assert isinstance(self.cond_node, ConditionalNode)
@@ -681,7 +683,7 @@ class TestCreateRetryToolErrorPair:
 
     def setup_method(self):
         self.analysis_node = FunctionalNode(func=lambda s: {}, name="analysis")
-        self.cond_node, self.retry_node = create_retry_tool_error_pair(
+        nodes = create_retry_tool_error_pair(
             tool=sqrt_tool,
             response_fn=mock_response_fn,
             tool_analysis_node=self.analysis_node,
@@ -689,6 +691,8 @@ class TestCreateRetryToolErrorPair:
             check_tool_name="check_tool",
             check_parse_name="check_parse",
         )
+        self.cond_node = nodes["check_tool"]
+        self.retry_node = nodes["retry_tool"]
 
     def test_returns_conditional_node_first(self):
         assert isinstance(self.cond_node, ConditionalNode)
@@ -725,14 +729,14 @@ class TestIntegrationSuccessfulLlmToolPair:
 
     def test_tool_output_correct(self):
         response_fn = make_response_fn(['{"sqrt_input": {"x": 16}}'])
-        llm_node, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=response_fn,
             llm_node_name="gen_args",
             tool_node_name="exec_tool",
         )
         runner = GraphRunner(
-            nodes=[llm_node, tool_node],
+            nodes=list(nodes.values()),
             start_node="gen_args",
         )
         result = runner.execute({"user_query": "what is sqrt(16)?"})
@@ -742,13 +746,13 @@ class TestIntegrationSuccessfulLlmToolPair:
 
     def test_trace_visits_both_nodes(self):
         response_fn = make_response_fn(['{"sqrt_input": {"x": 9}}'])
-        llm_node, tool_node = create_tool_llm_pair(
+        nodes = create_tool_llm_pair(
             tool=sqrt_tool,
             response_fn=response_fn,
             llm_node_name="gen_args",
             tool_node_name="exec_tool",
         )
-        runner = GraphRunner(nodes=[llm_node, tool_node], start_node="gen_args")
+        runner = GraphRunner(nodes=list(nodes.values()), start_node="gen_args")
         result = runner.execute({"user_query": "sqrt(9)"})
         node_names = [step["name"] for step in result["trace_log"]]
         assert "gen_args" in node_names
@@ -764,7 +768,7 @@ class TestIntegrationParseErrorRetry:
     def _build_graph(self, responses: list[str]):
         response_fn = make_response_fn(responses)
         tool_node = create_tool_node(sqrt_tool, name="exec_tool")
-        cond_node, retry_node = create_retry_parse_error_pair(
+        parse_nodes = create_retry_parse_error_pair(
             tool=sqrt_tool,
             response_fn=response_fn,
             retry_node_name="retry_parse",
@@ -778,7 +782,7 @@ class TestIntegrationParseErrorRetry:
             next_node_name="check_parse",
         )
         runner = GraphRunner(
-            nodes=[llm_node, cond_node, retry_node, tool_node],
+            nodes=[llm_node, *parse_nodes.values(), tool_node],
             start_node="gen_args",
             max_node_visits=5,
         )
@@ -840,7 +844,7 @@ class TestIntegrationToolErrorRetry:
         tool_node = create_tool_node(sqrt_tool, name="exec_tool", next_node_name="check_tool")
 
         # Parse-error retry pair: guards both initial LLM output and retry_tool output
-        parse_cond_node, parse_retry_node = create_retry_parse_error_pair(
+        parse_nodes = create_retry_parse_error_pair(
             tool=sqrt_tool,
             response_fn=response_fn,
             retry_node_name="retry_parse",
@@ -848,8 +852,8 @@ class TestIntegrationToolErrorRetry:
             tool_node=tool_node,
         )
 
-        # Tool-error conditional + retry node (fixed API: tool_analysis_node=)
-        tool_cond_node, tool_retry_node = create_retry_tool_error_pair(
+        # Tool-error conditional + retry node
+        tool_nodes = create_retry_tool_error_pair(
             tool=sqrt_tool,
             response_fn=response_fn,
             tool_analysis_node=analysis_node,
@@ -867,8 +871,8 @@ class TestIntegrationToolErrorRetry:
         )
 
         runner = GraphRunner(
-            nodes=[llm_node, parse_cond_node, parse_retry_node, tool_node,
-                   tool_cond_node, tool_retry_node, analysis_node],
+            nodes=[llm_node, *parse_nodes.values(), tool_node,
+                   *tool_nodes.values(), analysis_node],
             start_node="gen_args",
             max_node_visits=6,
         )

@@ -271,13 +271,14 @@ def create_tool_llm_pair(
         prompt_template=prompt_template,
         query_key=query_key,
         max_history_pairs=max_history_pairs,
+        temperature=temperature,
     )
 
     tool_node = create_tool_node(
         tool=tool, name=tool_node_name, next_node_name=tool_node_next_node_name
     )
 
-    return llm_node, tool_node
+    return {llm_node.name:llm_node, tool_node.name:tool_node}
 
 
 def wrap_tool_output(
@@ -729,7 +730,7 @@ def create_retry_parse_error_pair(
     conditional_node = create_conditional_parse_retry_node(
         tool_node=tool_node, retry_llm_node=retry_node, name=conditional_node_name
     )
-    return conditional_node, retry_node
+    return {conditional_node.name: conditional_node, retry_node.name: retry_node}
 
 
 def create_retry_tool_prompt_func(
@@ -915,4 +916,7 @@ def create_retry_tool_error_pair(
         name=check_tool_name,
     )
 
-    return conditional_tool_retry_node, retry_tool_node
+    return {
+        conditional_tool_retry_node.name: conditional_tool_retry_node,
+        retry_tool_node.name: retry_tool_node
+    }

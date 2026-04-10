@@ -94,4 +94,4 @@ def create_rag_query_pair(
         max_history_pairs=max_history_pairs,
     )
 
-    return retrieval_node, llm_node
+    return {retrieval_node.name : retrieval_node, llm_node.name: llm_node}
