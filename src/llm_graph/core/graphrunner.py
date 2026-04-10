@@ -6,7 +6,7 @@ which maintains state_dict and executes nodes
 import copy
 import time
 from datetime import datetime
-from typing import List, Dict, Set, Literal, Any
+from typing import Literal, Any, Iterable
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from .nodes import GraphNode
@@ -18,10 +18,7 @@ class GraphRunner:
 
     def __init__(
         self,
-        nodes: List[GraphNode]
-        | Set[GraphNode]
-        | tuple[GraphNode, ...]
-        | Dict[str, GraphNode],
+        nodes: Iterable[GraphNode] | dict[str, GraphNode],
         start_node: str,
         max_node_visits: int | None = None,
         on_max_visits: Literal["error", "exit"] = "exit",
@@ -29,7 +26,7 @@ class GraphRunner:
         """
         Parameters
         ----------
-        nodes : List[GraphNode] | Set[GraphNode] | tuple[GraphNode] | Dict[str, Graphnode]
+        nodes : Iterable[GraphNode] | Dict[str, Graphnode]
             nodes that are in the graph
         start_node : str
             name of node to start execution
@@ -40,10 +37,7 @@ class GraphRunner:
         """
 
         def make_nodes_dict(
-            nodes: List[GraphNode]
-            | Set[GraphNode]
-            | tuple[GraphNode, ...]
-            | Dict[str, GraphNode],
+            nodes: Iterable[GraphNode] | dict[str, GraphNode],
         ) -> dict[str, GraphNode]:
             """
             takes the nodes parameter and turns it into a dict if it's not already
@@ -56,16 +50,23 @@ class GraphRunner:
                             f"Node dict key {k} does not match node name {v.name}"
                         )
                 return nodes
-            if type(nodes) in (set, list, tuple):
-                nodes_dict = {node.name: node for node in nodes}
-                if len(nodes) != len(nodes_dict):
-                    raise ValueError("Duplicate node names detected")
-                return nodes_dict
-            raise TypeError(
-                f"Nodes needs to be a list, set, tuple, or dict, got {type(nodes)}"
-            )
+            try:
+                nodes_list = list(nodes)
+            except TypeError:
+                raise TypeError(f"Nodes must be an iterable or dict, got {type(nodes)}")
+            if not all(isinstance(node, GraphNode) for node in nodes_list):
+                raise TypeError(f"All elements in nodes must be GraphNode instances")
+            nodes_dict = {node.name: node for node in nodes_list}
+            if len(nodes_list) != len(nodes_dict):
+                raise ValueError("Duplicate node names detected")
+            return nodes_dict
 
         self.nodes_dict = make_nodes_dict(nodes)
+        if start_node not in self.nodes_dict:
+            raise ValueError(
+                f"start_node '{start_node}' not found in nodes. "
+                f"Available nodes: {list(self.nodes_dict.keys())}"
+                )
         self.start_node = start_node
         self.trace_log = []
         self.state_dict = {}
@@ -236,3 +237,33 @@ class GraphRunner:
 
         plt.tight_layout()
         plt.show()
+    @classmethod
+    def build(
+        cls,
+        node_dicts: Iterable[dict[str, GraphNode]],
+        start_node: str,
+        connections: dict[str, str] | None = None,
+        max_node_visits: int | None = None,
+        on_max_visits: Literal["error", "exit"] = "exit",
+    ) ->"GraphRunner":
+        nodes: dict[str, GraphNode] = {}
+        if connections is None:
+            connections = {}
+        for node_dict in node_dicts:
+            duplicates = nodes.keys() & node_dict.keys()
+            if duplicates:
+                raise ValueError(f"Duplicate keys found : {duplicates}")
+            nodes |= node_dict
+        for k,v in connections.items():
+            if k not in nodes:
+                raise ValueError(f"Connection source {k} not found in node_dicts")
+            if v not in nodes:
+                raise ValueError(f"Connection target {v} not found in node_dicts")
+            nodes[k].set_next_node(v)
+        return cls(
+            nodes=nodes,
+            start_node=start_node,
+            max_node_visits=max_node_visits,
+            on_max_visits=on_max_visits,
+        )
+        

@@ -49,6 +49,9 @@ def test_invalid_nodes_type_raises_type_error():
     with pytest.raises(TypeError):
         GraphRunner(nodes="not-iterable-of-nodes", start_node="A")  # type: ignore[arg-type]
 
+def test_invalid_node_elements_raises_type_error():
+    with pytest.raises(TypeError):
+        GraphRunner(nodes=["a", "b", "c"], start_node="A")
 
 def test_reset_trace_false_appends_to_existing_trace():
     node = _make_noop_node("A")
@@ -101,12 +104,10 @@ def test_conditional_node_drives_control_flow():
     assert res_c["state_dict"]["went"] == "C"
 
 
-def test_start_node_not_in_nodes_raises_key_error():
-    node = _make_noop_node("A")
-    runner = GraphRunner(nodes=[node], start_node="MISSING")
-
-    with pytest.raises(KeyError):
-        runner.execute({})
+def test_start_node_not_in_nodes_raises_value_error():
+    node_a = FunctionalNode(func=lambda s: {}, name="A")
+    with pytest.raises(ValueError, match="start_node"):
+        GraphRunner(nodes=[node_a], start_node="MISSING")
 
 
 def test_max_node_visits_zero_with_error_raises_before_node_executes():
@@ -162,3 +163,91 @@ def test_unrecognized_on_max_visits_value_treated_like_exit():
 
     assert result["terminated_early"] is True
     assert executed == []
+
+
+# ---------------------------------------------------------------------------
+# GraphRunner.build
+# ---------------------------------------------------------------------------
+
+class TestGraphRunnerBuild:
+
+    def _make_dict(self, *names, chain=True):
+        """Build a node dict. When chain=True, each node points to the next."""
+        nodes = [_make_noop_node(n) for n in names]
+        if chain:
+            for i in range(len(nodes) - 1):
+                nodes[i].set_next_node(nodes[i + 1].name)
+        return {n.name: n for n in nodes}
+
+    def test_single_node_dict_produces_valid_runner(self):
+        d = self._make_dict("A")
+        runner = GraphRunner.build(node_dicts=[d], start_node="A")
+        assert isinstance(runner, GraphRunner)
+        assert set(runner.nodes_dict.keys()) == {"A"}
+
+    def test_two_node_dicts_merged_into_runner(self):
+        d1 = self._make_dict("A", "B")
+        d2 = self._make_dict("C", "D")
+        runner = GraphRunner.build(node_dicts=[d1, d2], start_node="A")
+        assert set(runner.nodes_dict.keys()) == {"A", "B", "C", "D"}
+
+    def test_connections_wires_last_node_of_first_dict_to_first_node_of_second(self):
+        # A → B (internal), C → D (internal); connection needed: B → C
+        d1 = self._make_dict("A", "B")
+        d2 = self._make_dict("C", "D")
+        runner = GraphRunner.build(
+            node_dicts=[d1, d2],
+            start_node="A",
+            connections={"B": "C"},
+        )
+        assert runner.nodes_dict["B"].next_node_name == "C"
+
+    def test_connections_full_execution_crosses_both_dicts(self):
+        # A → B, then connection B → C, then C → D (terminal)
+        visited = []
+
+        def make_tracking_node(name, next_name=None):
+            def func(state):
+                visited.append(name)
+                return {}
+            return FunctionalNode(func=func, name=name, next_node_name=next_name)
+
+        d1 = {"A": make_tracking_node("A", "B"), "B": make_tracking_node("B")}
+        d2 = {"C": make_tracking_node("C", "D"), "D": make_tracking_node("D")}
+
+        runner = GraphRunner.build(
+            node_dicts=[d1, d2],
+            start_node="A",
+            connections={"B": "C"},
+        )
+        runner.execute({})
+        assert visited == ["A", "B", "C", "D"]
+
+    def test_none_connections_defaults_to_empty(self):
+        d = self._make_dict("A", "B")
+        runner = GraphRunner.build(node_dicts=[d], start_node="A", connections=None)
+        assert isinstance(runner, GraphRunner)
+
+    def test_duplicate_keys_across_dicts_raise_value_error(self):
+        d1 = self._make_dict("A", "B")
+        d2 = self._make_dict("B", "C")
+        with pytest.raises(ValueError, match="Duplicate"):
+            GraphRunner.build(node_dicts=[d1, d2], start_node="A")
+
+    def test_connection_with_unknown_source_raises_value_error(self):
+        d = self._make_dict("A", "B")
+        with pytest.raises(ValueError, match="source"):
+            GraphRunner.build(node_dicts=[d], start_node="A", connections={"Z": "A"})
+
+    def test_connection_with_unknown_target_raises_value_error(self):
+        d = self._make_dict("A", "B")
+        with pytest.raises(ValueError, match="target"):
+            GraphRunner.build(node_dicts=[d], start_node="A", connections={"B": "Z"})
+
+    def test_max_node_visits_forwarded_to_runner(self):
+        d = {"A": FunctionalNode(func=lambda _: {}, name="A", next_node_name="A")}
+        runner = GraphRunner.build(
+            node_dicts=[d], start_node="A", max_node_visits=2, on_max_visits="exit"
+        )
+        result = runner.execute({})
+        assert result["terminated_early"] is True

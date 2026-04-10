@@ -1,7 +1,7 @@
 """
 module with node classes used
 """
-
+from __future__ import annotations
 from typing import Callable, Any
 import copy
 
@@ -42,6 +42,19 @@ class GraphNode:
         output = self._execute_impl(state)
         self.last_output = copy.deepcopy(output)
         return output
+
+    def set_next_node(self, next: str | "GraphNode") -> None:
+        """
+        set next node
+        Parameters
+        ----------
+        next : str | GraphNode
+            either the name of the next node or the node itself.
+        """
+        if isinstance(next, GraphNode):
+            self.next_node_name = next.name
+        else:
+            self.next_node_name = next
 
     def _execute_impl(self, state: dict[str, Any]) -> dict[str, Any]:
         # this is expected to be implemented in any class inheriting from GraphNode
@@ -117,5 +130,5 @@ class ConditionalNode(GraphNode):
         dict[str, Any]
             empty dict, as conditional nodes do not update state
         """
-        self.next_node_name = self.condition_fn(state)
+        self.set_next_node(self.condition_fn(state))
         return {}
