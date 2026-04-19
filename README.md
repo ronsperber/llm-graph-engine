@@ -135,6 +135,20 @@ See `example_notebooks/rag_branching_example.ipynb` for a complete walkthrough c
 
 ---
 
+## Demo app
+
+`app.py` is a Streamlit chat interface built on the same RAG + conditional branching graph from the example notebook. It lets you ask questions about the system and see which branch (coding or general) the graph routed to for each answer.
+
+Make sure the RAG index is built first (see above), then run:
+
+```bash
+streamlit run app.py
+```
+
+The sidebar contains suggested questions covering both branches. The graph persists `message_history` across turns so the LLM has full conversation context throughout the session.
+
+---
+
 ## Running the tests
 
 ```bash
