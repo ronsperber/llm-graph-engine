@@ -5,8 +5,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "llm-graph-engine"
 version = "0.1.0"
-dependencies = []
-
+dependencies = [
+    "openai>=1.0.0",
+    "chromadb>=0.5.0",
+    "matplotlib>=3.7.0",
+    "pydantic>=2.0.0",
+    "sentence-transformers>=3.0.0",
+    "python-dotenv>=1.0.0",
+    "streamlit>=1.35.0",
+]
+[project.optional-dependencies]
+dev = ["pytest", "jupyter", "ipython"]
 [tool.setuptools]
 package-dir = {"" = "src"}
 

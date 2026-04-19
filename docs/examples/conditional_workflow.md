@@ -94,7 +94,7 @@ graphrunner = GraphRunner(
     start_node = "start"
 )
 runner = SessionRunner(
-    graphrunner=graphrunner,
+    graph=graphrunner,
     session_keys=["message_history"]
 )
 response = runner.execute(
