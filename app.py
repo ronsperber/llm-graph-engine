@@ -4,6 +4,8 @@ import logging
 from openai import OpenAI, APITimeoutError
 from typing import Any
 import os
+import warnings
+
 
 from llm_graph.llm.response_functions import OpenAI_response_fn
 from llm_graph.factories.llm import create_llm_node
@@ -12,15 +14,28 @@ from llm_graph.core.nodes import ConditionalNode
 from llm_graph.core.graphrunner import GraphRunner
 from llm_graph.core.sessionrunner import SessionRunner
 
-
-
+# filter out any warnings from transformers 
+warnings.filterwarnings("ignore", module="transformers")
+# create the logger
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 logging.getLogger("transformers").setLevel(logging.ERROR)
+# load environment variables
 load_dotenv()
+
+def get_secret(key:str) -> str:
+    """
+    used to get API keys
+    For streamlit cloud it uses the secret
+    otherwise, uses the environment variable
+    """
+    try:
+        return st.secrets.get(key, "") or os.environ.get(key, "")
+    except Exception:
+        return os.environ.get(key, "")
 
 DB_PATH = "vector_db"
 COLLECTION = "llm_graph_docs"
@@ -68,13 +83,13 @@ def check_branching_node(state: dict[str,Any]) -> str:
 def build_session(use_openAI=False) -> SessionRunner:
     if use_openAI:
         logger.info("Building session with OpenAI")
-        client = OpenAI()
+        client = OpenAI(api_key=get_secret("OPENAI_API_KEY"))
         branch_response_fn = response_fn = OpenAI_response_fn(client)
     else:
         logger.info("Building session witn Nvidia (Llama/Qwen)")
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
-            api_key=os.environ.get("NVIDIA_API_KEY"),
+            api_key=get_secret("NVIDIA_API_KEY"),
             timeout=30.0,
             )
         response_fn = OpenAI_response_fn(client, model="qwen/qwen3-coder-480b-a35b-instruct")
@@ -120,7 +135,7 @@ def build_session(use_openAI=False) -> SessionRunner:
             general_nodes,
         ],
         start_node="branch_llm",
-        max_node_visits=MAX_NODE_VISITS
+        max_node_visits=MAX_NODE_VISITS,
     )
 
     return SessionRunner(graph=graphrunner, session_keys=["message_history"])
