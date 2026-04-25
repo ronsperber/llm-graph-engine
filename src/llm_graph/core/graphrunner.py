@@ -5,8 +5,9 @@ which maintains state_dict and executes nodes
 
 import copy
 import time
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import Literal, Any, Iterable
+from typing import Literal, Any
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 from .nodes import GraphNode
@@ -240,7 +241,7 @@ class GraphRunner:
     @classmethod
     def build(
         cls,
-        node_dicts: Iterable[dict[str, GraphNode]],
+        node_dicts: Iterable[Mapping[str, GraphNode]],
         start_node: str,
         connections: dict[str, str] | None = None,
         max_node_visits: int | None = None,

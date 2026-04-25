@@ -236,7 +236,7 @@ def create_tool_llm_pair(
     query_key: str = "user_query",
     max_history_pairs: int = 10,
     temperature: float = 0.1,
-) -> tuple[FunctionalNode, FunctionalNode]:
+) -> dict[str,FunctionalNode]:
     """
     Create a pair of node from a tool, one of which is an LLM node
     to create the argument key, the other to execute the tool

@@ -75,7 +75,7 @@ def create_rag_query_pair(
     query_key: str = "user_query",
     prompt_template: str | None = None,
     max_history_pairs: int = 10,
-) -> tuple[FunctionalNode, FunctionalNode]:
+) -> dict[str, FunctionalNode]:
     retrieval_node = create_retrieval_node(
         path=path,
         collection_name=collection_name,
