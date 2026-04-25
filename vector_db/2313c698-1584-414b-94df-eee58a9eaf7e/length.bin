@@ -1,0 +1,7 @@
+se any publically available libraries to import if it helps solve the problem. Do not go beyond what is asked other than using normal good coding practices. Give your response in JSON format with the key 'answer'
+
+The query is {user_query}
+"""
+
+general_prompt ="""
+You are answering a general knowledge question. Do your best to give an accurate response. Format your response in JSON format with key

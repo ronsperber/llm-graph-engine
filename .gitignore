@@ -185,8 +185,7 @@ cython_debug/
 
 # local notebooks
 local_notebooks/
-# the database
-vector_db/
+
 # temporary and output folders
 tmp/
 output/
