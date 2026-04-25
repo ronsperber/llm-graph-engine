@@ -14,7 +14,10 @@ from llm_graph.core.sessionrunner import SessionRunner
 
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 logging.getLogger("transformers").setLevel(logging.ERROR)
 load_dotenv()
@@ -62,11 +65,13 @@ def check_branching_node(state: dict[str,Any]) -> str:
     return state.get("query_type","general")
 
 
-def build_session(use_openAI=True) -> SessionRunner:
+def build_session(use_openAI=False) -> SessionRunner:
     if use_openAI:
+        logger.info("Building session with OpenAI")
         client = OpenAI()
         branch_response_fn = response_fn = OpenAI_response_fn(client)
     else:
+        logger.info("Building session witn Nvidia (Llama/Qwen)")
         client = OpenAI(
             base_url="https://integrate.api.nvidia.com/v1",
             api_key=os.environ.get("NVIDIA_API_KEY"),
@@ -144,6 +149,7 @@ if "db_warmed" not in st.session_state:
         collection = db_client.get_collection(COLLECTION)
         collection.query(query_texts=["warmup"], n_results=1)
         st.session_state.db_warmed = True
+        logger.info("Database warmed up")
 
 if "session_runner" not in st.session_state:
     st.session_state.session_runner = build_session()
