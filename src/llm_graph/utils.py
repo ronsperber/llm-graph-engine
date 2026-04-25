@@ -3,6 +3,7 @@ module containing any utility functions
 """
 
 from typing import Callable, Protocol, Any
+import re
 from inspect import signature
 from pydantic import BaseModel, ValidationError
 from openai.types.chat import ChatCompletionMessageParam
@@ -24,6 +25,7 @@ def json_parse(s: str) -> dict[str, Any]:
             when that was unable to be done, it returns a dict with 'raw_output' and 'parse_error'
             keys
     """
+    s = re.sub(r"^```(?:json)?\s*|\s*```$", "", s.strip())
     try:
         parsed = json.loads(s)
     except Exception as e:
