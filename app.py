@@ -4,6 +4,7 @@ import logging
 from openai import OpenAI, APITimeoutError
 from typing import Any
 import os
+from pathlib import Path
 import warnings
 
 
@@ -24,7 +25,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logging.getLogger("transformers").setLevel(logging.ERROR)
 # load environment variables
-load_dotenv()
+env_path = Path.home() / ".secrets" / "llm-graph-engine" / ".env"
+load_dotenv(env_path)
 
 def get_secret(key:str) -> str:
     """
