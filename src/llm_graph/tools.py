@@ -3,6 +3,7 @@ module of common tools to use
 """
 
 import chromadb
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 from .utils import tool_call
 from llm_graph.core.nodes import NodeFunc
 

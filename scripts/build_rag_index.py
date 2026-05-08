@@ -19,7 +19,7 @@ except:
     pass
 
 collection = client.create_collection(
-    name="llm_graph_docs", embedding_function=embedding_fn
+    name="llm_graph_docs", embedding_function=embedding_fn # type: ignore (issue with chromadb type stubs)
 )
 
 
