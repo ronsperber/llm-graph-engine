@@ -107,7 +107,7 @@ class ConditionalNode(GraphNode):
     Node to determine which node to go to based on conditional
     """
 
-    def __init__(self, name: str, condition_fn: Callable):
+    def __init__(self, name: str, condition_fn: Callable[[dict[str, Any]], str]):
         """
         parameters
         name : str

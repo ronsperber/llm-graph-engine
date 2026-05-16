@@ -15,7 +15,7 @@ client = chromadb.PersistentClient(path=DB_PATH)
 # Delete and recreate collection for clean rebuild
 try:
     client.delete_collection("llm_graph_docs")
-except:
+except Exception:
     pass
 
 collection = client.create_collection(

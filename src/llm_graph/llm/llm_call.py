@@ -7,7 +7,7 @@ with an LLM
 from typing import Any, Callable
 from llm_graph.utils import ResponseFn, json_parse
 
-PromptTemplate = str | Callable[[dict[str, Any], str], str] | None
+PromptTemplate = str | Callable[[dict[str, Any]], str] | None
 
 
 class LLMCall:

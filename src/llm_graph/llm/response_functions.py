@@ -9,7 +9,7 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletion
 from llm_graph.utils import ResponseFn
 
 
-def dict_to_str(hist_dict: dict) -> str:
+def dict_to_str(hist_dict: dict[str, str]) -> str:
     """
     converts one dict {"role":role, "content":content} to a string
     """
@@ -58,7 +58,7 @@ def OpenAI_response_fn(
 
     def _call(
         history: list[ChatCompletionMessageParam],
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """
         response function that gets plugged in

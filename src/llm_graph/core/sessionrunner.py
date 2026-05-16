@@ -10,7 +10,7 @@ from .graphrunner import GraphRunner
 
 
 class SessionRunner:
-    def __init__(self, graph: GraphRunner, session_keys: list | None = None):
+    def __init__(self, graph: GraphRunner, session_keys: list[str] | None = None):
         """
         Parameters
         ----------

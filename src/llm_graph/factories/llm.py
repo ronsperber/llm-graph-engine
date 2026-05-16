@@ -3,7 +3,7 @@ from llm_graph.core.nodes import FunctionalNode
 from llm_graph.llm.llm_call import LLMCall, PromptTemplate
 
 
-def default_llm_prompt(query_key: str):
+def default_llm_prompt(query_key: str) -> str:
     """
     create default prompt for an LLM based on user query
     Parameter

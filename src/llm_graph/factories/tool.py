@@ -20,8 +20,9 @@ def get_tool_metadata(tool: NodeFunc) -> dict[str, Any]:
     """
     # if the tool was created with @tool_call or has an attribute called tool_meta
     # return that
-    if hasattr(tool, "tool_meta") and isinstance(tool.tool_meta, dict):
-        return tool.tool_meta
+    tool_meta = getattr(tool, "tool_meta", None)
+    if isinstance(tool_meta, dict):
+        return tool_meta
     # construct the metadata from tool when it wasn't ther
     name = tool.__name__
     doc = tool.__doc__ or "No docstring provided."
@@ -152,7 +153,7 @@ def create_tool_llm_node(
     prompt_template: str | None = None,
     query_key: str = "user_query",
     max_history_pairs: int = 10,
-    temperature=0.1,
+    temperature: float = 0.1,
 ) -> FunctionalNode:
     """
     Create a node that will use an LLM response function to get the arguments
@@ -385,7 +386,7 @@ def create_tool_analysis_node(
     temperature: float | None = None,
     max_tokens: int | None = None,
 ) -> FunctionalNode:
-    f"""
+    """
     Create an LLM node to answer user query using the output from a tool
     Parameters
     ----------
@@ -452,7 +453,7 @@ def create_retry_llm_conditional(
     tool_name = tool_node.name
     retry_llm_name = retry_llm_node.name
 
-    def conditional_retry(state: dict) -> str:
+    def conditional_retry(state: dict[str, Any]) -> str:
         if state.get("parse_error", False):
             return retry_llm_name
         return tool_name
@@ -683,8 +684,8 @@ def create_retry_parse_error_pair(
     query_key: str = "user_query",
     max_history_pairs: int = 10,
     temperature: float = 0.1,
-):
-    f"""
+) -> dict[str, FunctionalNode | ConditionalNode]:
+    """
     create a pair of nodes to deal with parse errors
     One ConditionalNode to route afterwards, one to attempt
     to fix parsing errors
@@ -841,7 +842,7 @@ def create_retry_tool_conditional(
     retry_tool_name = retry_tool_node.name
     success_key = f"{output_key}_success"
 
-    def conditional_retry(state: dict) -> str:
+    def conditional_retry(state: dict[str, Any]) -> str:
         if not state.get(success_key, False):
             return retry_tool_name
         return tool_analysis_name
@@ -896,7 +897,7 @@ def create_retry_tool_error_pair(
     query_key: str = "user_query",
     max_history_pairs: int = 10,
     temperature: float = 0.1,
-):
+) -> dict[str, FunctionalNode | ConditionalNode]:
 
     retry_tool_node = create_retry_tool_error_node(
         tool=tool,

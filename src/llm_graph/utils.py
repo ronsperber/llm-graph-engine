@@ -39,7 +39,7 @@ def json_parse(s: str) -> dict[str, Any]:
 
 class ResponseFn(Protocol):
     def __call__(
-        self, messages: list[ChatCompletionMessageParam], **kwargs: Any
+        self, history: list[ChatCompletionMessageParam], **kwargs: Any
     ) -> dict[str, Any]: ...
 
 
@@ -58,10 +58,10 @@ def tool_call(
         model to validate the arguments against
     """
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]):
 
         @functools.wraps(func)
-        def wrapper(state: dict):
+        def wrapper(state: dict[str, Any]) -> dict[str, Any]:
             """
             wrapper function used with the original function
             """

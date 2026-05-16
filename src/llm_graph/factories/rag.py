@@ -1,3 +1,4 @@
+from typing import Any
 from llm_graph.utils import ResponseFn
 from llm_graph.core.nodes import FunctionalNode
 from llm_graph.tools import make_chroma_search_tool
@@ -10,10 +11,10 @@ def create_retrieval_node(
     query_key: str = "user_query",
     name: str = "retrieval",
     next_node_name: str | None = None,
-):
+) -> FunctionalNode:
     tool = make_chroma_search_tool(path=path, collection_name=collection_name)
 
-    def func(state: dict):
+    def func(state: dict[str, Any]) -> dict[str, Any]:
         query = state.get(query_key, "")
         ret_key = {"retrieval_args": {"query": query}}
         resp = tool(ret_key)

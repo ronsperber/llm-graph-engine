@@ -168,7 +168,7 @@ class GraphRunner:
             "total_tokens": self.in_tokens + self.out_tokens,
         }
 
-    def print_trace(self):
+    def print_trace(self) -> None:
         """
         print through the trace
         """
@@ -192,7 +192,7 @@ class GraphRunner:
             print(f"  Timestamp: {timestamp}")
             print()
 
-    def matplotlib_trace(self, branch_color_map: dict | None = None):
+    def matplotlib_trace(self, branch_color_map: dict[str, str] | None = None) -> None:
         """
         Draw a simple linear trace of the executed graph using matplotlib.
         Works with both linear and conditional nodes.
